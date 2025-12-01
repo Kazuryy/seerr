@@ -121,6 +121,14 @@ export interface ProxySettings {
   bypassLocalAddresses: boolean;
 }
 
+export interface DeletionSettings {
+  enabled: boolean;
+  allowNonAdminDeletionRequests: boolean;
+  votingDurationHours: number;
+  requiredVotePercentage: number;
+  autoDeleteOnApproval: boolean;
+}
+
 export interface MainSettings {
   apiKey: string;
   applicationTitle: string;
@@ -131,6 +139,7 @@ export interface MainSettings {
     movie: Quota;
     tv: Quota;
   };
+  deletion: DeletionSettings;
   hideAvailable: boolean;
   hideBlacklisted: boolean;
   localLogin: boolean;
@@ -387,6 +396,13 @@ class Settings {
         defaultQuotas: {
           movie: {},
           tv: {},
+        },
+        deletion: {
+          enabled: false,
+          allowNonAdminDeletionRequests: false,
+          votingDurationHours: 48,
+          requiredVotePercentage: 60,
+          autoDeleteOnApproval: false,
         },
         hideAvailable: false,
         hideBlacklisted: false,
