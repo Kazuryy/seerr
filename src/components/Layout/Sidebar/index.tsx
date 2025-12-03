@@ -2,6 +2,7 @@ import Badge from '@app/components/Common/Badge';
 import UserWarnings from '@app/components/Layout/UserWarnings';
 import VersionStatus from '@app/components/Layout/VersionStatus';
 import useClickOutside from '@app/hooks/useClickOutside';
+import useSettings from '@app/hooks/useSettings';
 import { Permission, useUser } from '@app/hooks/useUser';
 import defineMessages from '@app/utils/defineMessages';
 import { Transition } from '@headlessui/react';
@@ -12,6 +13,7 @@ import {
   EyeSlashIcon,
   FilmIcon,
   SparklesIcon,
+  TrashIcon,
   TvIcon,
   UsersIcon,
   XMarkIcon,
@@ -27,6 +29,7 @@ export const menuMessages = defineMessages('components.Layout.Sidebar', {
   browsemovies: 'Movies',
   browsetv: 'Series',
   requests: 'Requests',
+  deletionrequests: 'Deletion Requests',
   blacklist: 'Blacklist',
   issues: 'Issues',
   users: 'Users',
@@ -77,6 +80,12 @@ const SidebarLinks: SidebarLinkProps[] = [
     messagesKey: 'requests',
     svgIcon: <ClockIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/requests/,
+  },
+  {
+    href: '/deletion-requests',
+    messagesKey: 'deletionrequests',
+    svgIcon: <TrashIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/deletion-requests/,
   },
   {
     href: '/blacklist',
@@ -131,6 +140,7 @@ const Sidebar = ({
   const router = useRouter();
   const intl = useIntl();
   const { hasPermission } = useUser();
+  const settings = useSettings();
   useClickOutside(navRef, () => setClosed());
 
   useEffect(() => {
@@ -198,13 +208,21 @@ const Sidebar = ({
                       </span>
                     </div>
                     <nav className="mt-10 flex-1 space-y-4 px-4">
-                      {SidebarLinks.filter((link) =>
-                        link.requiredPermission
+                      {SidebarLinks.filter((link) => {
+                        // Filter out deletion requests if feature is disabled
+                        if (
+                          link.messagesKey === 'deletionrequests' &&
+                          !settings.currentSettings.deletion?.enabled
+                        ) {
+                          return false;
+                        }
+                        // Filter by permissions
+                        return link.requiredPermission
                           ? hasPermission(link.requiredPermission, {
                               type: link.permissionType ?? 'and',
                             })
-                          : true
-                      ).map((sidebarLink) => {
+                          : true;
+                      }).map((sidebarLink) => {
                         return (
                           <Link
                             key={`mobile-${sidebarLink.messagesKey}`}
@@ -267,13 +285,21 @@ const Sidebar = ({
                 </span>
               </div>
               <nav className="mt-8 flex-1 space-y-4 px-4">
-                {SidebarLinks.filter((link) =>
-                  link.requiredPermission
+                {SidebarLinks.filter((link) => {
+                  // Filter out deletion requests if feature is disabled
+                  if (
+                    link.messagesKey === 'deletionrequests' &&
+                    !settings.currentSettings.deletion?.enabled
+                  ) {
+                    return false;
+                  }
+                  // Filter by permissions
+                  return link.requiredPermission
                     ? hasPermission(link.requiredPermission, {
                         type: link.permissionType ?? 'and',
                       })
-                    : true
-                ).map((sidebarLink) => {
+                    : true;
+                }).map((sidebarLink) => {
                   return (
                     <Link
                       key={`desktop-${sidebarLink.messagesKey}`}

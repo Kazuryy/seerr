@@ -17,12 +17,14 @@ import Tooltip from '@app/components/Common/Tooltip';
 import ExternalLinkBlock from '@app/components/ExternalLinkBlock';
 import IssueModal from '@app/components/IssueModal';
 import ManageSlideOver from '@app/components/ManageSlideOver';
+import DeletionRequestButton from '@app/components/Media/DeletionRequestButton';
 import MediaSlider from '@app/components/MediaSlider';
 import PersonCard from '@app/components/PersonCard';
 import RequestButton from '@app/components/RequestButton';
 import Slider from '@app/components/Slider';
 import StatusBadge from '@app/components/StatusBadge';
 import useDeepLinks from '@app/hooks/useDeepLinks';
+import { MediaType as DeletionMediaType } from '@app/hooks/useDeletionRequests';
 import useLocale from '@app/hooks/useLocale';
 import useSettings from '@app/hooks/useSettings';
 import { Permission, UserType, useUser } from '@app/hooks/useUser';
@@ -623,6 +625,14 @@ const MovieDetails = ({ movie }: MovieDetailsProps) => {
             tmdbId={data.id}
             onUpdate={() => revalidate()}
           />
+          {data.mediaInfo?.id && (
+            <DeletionRequestButton
+              mediaId={data.mediaInfo.id}
+              mediaType={DeletionMediaType.MOVIE}
+              title={data.title}
+              onRequestCreated={() => revalidate()}
+            />
+          )}
           {(data.mediaInfo?.status === MediaStatus.AVAILABLE ||
             (settings.currentSettings.movie4kEnabled &&
               hasPermission(

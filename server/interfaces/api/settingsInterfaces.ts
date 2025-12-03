@@ -48,6 +48,13 @@ export interface PublicSettingsResponse {
   emailEnabled: boolean;
   newPlexLogin: boolean;
   youtubeUrl: string;
+  deletion?: {
+    enabled: boolean;
+    allowNonAdminDeletionRequests: boolean;
+    votingDurationHours: number;
+    requiredVotePercentage: number;
+    autoDeleteOnApproval: boolean;
+  };
 }
 
 export interface CacheItem {

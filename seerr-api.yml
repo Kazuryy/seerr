@@ -40,6 +40,8 @@ tags:
     description: Collection of media to watch later
   - name: blacklist
     description: Blacklisted media from discovery page.
+  - name: deletion
+    description: Endpoints related to media deletion voting and management.
 servers:
   - url: '{server}/api/v1'
     variables:
@@ -4721,6 +4723,318 @@ paths:
                           type: string
                         title:
                           type: string
+  /deletion:
+    get:
+      summary: Returns deletion requests
+      description: Returns list of all deletion requests with pagination
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: query
+          name: take
+          schema:
+            type: number
+            nullable: true
+            example: 20
+        - in: query
+          name: skip
+          schema:
+            type: number
+            nullable: true
+            example: 0
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, voting, approved, rejected, completed, cancelled]
+      responses:
+        '200':
+          description: Deletion requests returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pageInfo:
+                    type: object
+                    properties:
+                      pages:
+                        type: number
+                      pageSize:
+                        type: number
+                      results:
+                        type: number
+                      page:
+                        type: number
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 1
+                        status:
+                          type: string
+                          example: voting
+                        mediaId:
+                          type: number
+                          example: 438631
+                        mediaType:
+                          type: string
+                          example: movie
+                        reason:
+                          type: string
+                          nullable: true
+                        votesFor:
+                          type: number
+                          example: 5
+                        votesAgainst:
+                          type: number
+                          example: 2
+                        votingEndsAt:
+                          type: string
+                          example: '2024-04-23T01:55:44.000Z'
+                        createdAt:
+                          type: string
+                          example: '2024-04-21T01:55:44.000Z'
+                        requestedBy:
+                          type: object
+                        processedBy:
+                          type: object
+                          nullable: true
+                        isVotingActive:
+                          type: boolean
+                        votePercentage:
+                          type: number
+                        totalVotes:
+                          type: number
+    post:
+      summary: Create a deletion request
+      description: Creates a new deletion request for media
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mediaId
+                - mediaType
+              properties:
+                mediaId:
+                  type: number
+                  example: 438631
+                mediaType:
+                  type: string
+                  enum: [movie, tv]
+                reason:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Deletion request created successfully
+        '400':
+          description: Invalid request or deletion not allowed
+  /deletion/check/{mediaId}:
+    get:
+      summary: Check if deletion request exists
+      description: Check if an active deletion request exists for a media item
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: mediaId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: mediaType
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+      responses:
+        '200':
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                  request:
+                    type: object
+                    nullable: true
+        '400':
+          description: Invalid or missing mediaType parameter
+  /deletion/{id}:
+    get:
+      summary: Get deletion request by ID
+      description: Returns a single deletion request
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Deletion request details
+        '404':
+          description: Deletion request not found
+  /deletion/{id}/vote:
+    post:
+      summary: Vote on deletion request
+      description: Cast a vote for or against a deletion request
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vote
+              properties:
+                vote:
+                  type: boolean
+                  description: true for deletion, false against deletion
+      responses:
+        '200':
+          description: Vote recorded successfully
+        '400':
+          description: Voting is closed
+        '404':
+          description: Deletion request not found
+    delete:
+      summary: Remove vote from deletion request
+      description: Remove the current user's vote
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Vote removed successfully
+        '400':
+          description: Voting is closed
+        '404':
+          description: Vote not found
+  /deletion/{id}/vote/me:
+    get:
+      summary: Get current user's vote
+      description: Returns the current user's vote on a deletion request
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: User's vote or null if no vote
+          content:
+            application/json:
+              schema:
+                type: object
+                nullable: true
+                properties:
+                  id:
+                    type: number
+                  deletionRequestId:
+                    type: number
+                  vote:
+                    type: boolean
+                  createdAt:
+                    type: string
+  /deletion/{id}/execute:
+    post:
+      summary: Execute media deletion
+      description: Execute approved deletion (admin only)
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Deletion executed successfully
+        '400':
+          description: Invalid status for execution
+        '403':
+          description: Insufficient permissions
+        '404':
+          description: Deletion request not found
+  /deletion/{id}/cancel:
+    post:
+      summary: Cancel deletion request
+      description: Cancel a pending deletion request
+      tags:
+        - deletion
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Deletion request cancelled
+        '400':
+          description: Invalid status for cancellation
+        '403':
+          description: Unauthorized to cancel
+        '404':
+          description: Deletion request not found
   /user/{userId}/settings/main:
     get:
       summary: Get general settings for a user
