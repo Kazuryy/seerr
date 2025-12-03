@@ -212,6 +212,7 @@ interface FullPublicSettings extends PublicSettings {
   userEmailRequired: boolean;
   newPlexLogin: boolean;
   youtubeUrl: string;
+  deletion: DeletionSettings;
 }
 
 export interface NotificationAgentConfig {
@@ -355,7 +356,8 @@ export type JobId =
   | 'jellyfin-full-scan'
   | 'image-cache-cleanup'
   | 'availability-sync'
-  | 'process-blacklisted-tags';
+  | 'process-blacklisted-tags'
+  | 'deletion-vote-processor';
 
 export interface AllSettings {
   clientId: string;
@@ -589,6 +591,9 @@ class Settings {
         'process-blacklisted-tags': {
           schedule: '0 30 1 */7 * *',
         },
+        'deletion-vote-processor': {
+          schedule: '0 0 * * * *',
+        },
       },
       network: {
         csrfProtection: false,
@@ -713,6 +718,7 @@ class Settings {
         this.data.notifications.agents.email.options.userEmailRequired,
       newPlexLogin: this.data.main.newPlexLogin,
       youtubeUrl: this.data.main.youtubeUrl,
+      deletion: this.data.main.deletion,
     };
   }
 

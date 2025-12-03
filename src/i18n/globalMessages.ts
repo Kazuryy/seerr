@@ -68,6 +68,9 @@ const globalMessages = defineMessages('i18n', {
   addToBlacklist: 'Add to Blacklist',
   removefromBlacklist: 'Remove from Blacklist',
   specials: 'Specials',
+  voting: 'Voting',
+  rejected: 'Rejected',
+  cancelled: 'Cancelled',
 });
 
 export default globalMessages;
