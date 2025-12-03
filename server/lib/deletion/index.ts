@@ -9,6 +9,7 @@ import {
 import { DeletionVote } from '@server/entity/DeletionVote';
 import Media from '@server/entity/Media';
 import type { User } from '@server/entity/User';
+import { Permission } from '@server/lib/permissions';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
 
@@ -64,10 +65,10 @@ class DeletionService {
     const deletionRequestRepository = getRepository(DeletionRequest);
     const settings = getSettings();
 
-    // Calculate voting end time
-    const votingEndsAt = new Date();
-    votingEndsAt.setHours(
-      votingEndsAt.getHours() + settings.main.deletion.votingDurationHours
+    // Calculate voting end time (add hours as milliseconds)
+    const votingDurationHours = settings.main.deletion.votingDurationHours;
+    const votingEndsAt = new Date(
+      Date.now() + votingDurationHours * 60 * 60 * 1000
     );
 
     const deletionRequest = new DeletionRequest({
@@ -456,7 +457,7 @@ class DeletionService {
 
     // Check if user is the requester or has admin permissions
     const isRequester = deletionRequest.requestedBy.id === user.id;
-    const hasPermission = user.hasPermission([1]); // MANAGE_REQUESTS permission
+    const hasPermission = user.hasPermission([Permission.MANAGE_REQUESTS]);
 
     if (!isRequester && !hasPermission) {
       throw new UnauthorizedError(

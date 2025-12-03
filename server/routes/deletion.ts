@@ -23,6 +23,7 @@ import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
 import { isAuthenticated } from '@server/middleware/auth';
 import { Router } from 'express';
+import { In } from 'typeorm';
 import { z } from 'zod';
 
 const deletionRoutes = Router();
@@ -38,7 +39,7 @@ const deletionGetSchema = z.object({
 const createDeletionRequestSchema = z.object({
   mediaId: z.number().int().positive(),
   mediaType: z.nativeEnum(MediaType),
-  reason: z.string().optional(),
+  reason: z.string().max(500).optional(),
 });
 
 const voteOnDeletionSchema = z.object({
@@ -92,6 +93,59 @@ deletionRoutes.get('/', isAuthenticated(), async (req, res, next) => {
     });
   }
 });
+
+/**
+ * GET /api/v1/deletion/check/:mediaId
+ * Check if an active deletion request exists for a media item
+ */
+deletionRoutes.get<{ mediaId: string }>(
+  '/check/:mediaId',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const mediaId = Number(req.params.mediaId);
+      const mediaType = req.query.mediaType as MediaType;
+
+      if (!mediaType || !Object.values(MediaType).includes(mediaType)) {
+        return next({
+          status: 400,
+          message: 'Invalid or missing mediaType query parameter.',
+        });
+      }
+
+      const deletionRequestRepository = getRepository(DeletionRequest);
+
+      const existingRequest = await deletionRequestRepository.findOne({
+        where: {
+          mediaId,
+          mediaType,
+          status: In([
+            DeletionRequestStatus.PENDING,
+            DeletionRequestStatus.VOTING,
+            DeletionRequestStatus.APPROVED,
+          ]),
+        },
+      });
+
+      return res.status(200).json({
+        exists: !!existingRequest,
+        request: existingRequest
+          ? (existingRequest.toJSON() as unknown as DeletionRequestResult)
+          : null,
+      });
+    } catch (error) {
+      logger.error('Failed to check deletion request', {
+        label: 'Deletion Routes',
+        error: error.message,
+        mediaId: req.params.mediaId,
+      });
+      return next({
+        status: 500,
+        message: 'Unable to check deletion request.',
+      });
+    }
+  }
+);
 
 /**
  * GET /api/v1/deletion/:id

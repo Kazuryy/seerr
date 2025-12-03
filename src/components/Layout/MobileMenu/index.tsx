@@ -1,6 +1,7 @@
 import Badge from '@app/components/Common/Badge';
 import { menuMessages } from '@app/components/Layout/Sidebar';
 import useClickOutside from '@app/hooks/useClickOutside';
+import useSettings from '@app/hooks/useSettings';
 import { Permission, useUser } from '@app/hooks/useUser';
 import { Transition } from '@headlessui/react';
 import {
@@ -11,6 +12,7 @@ import {
   EyeSlashIcon,
   FilmIcon,
   SparklesIcon,
+  TrashIcon,
   TvIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline';
@@ -21,6 +23,7 @@ import {
   EyeSlashIcon as FilledEyeSlashIcon,
   FilmIcon as FilledFilmIcon,
   SparklesIcon as FilledSparklesIcon,
+  TrashIcon as FilledTrashIcon,
   TvIcon as FilledTvIcon,
   UsersIcon as FilledUsersIcon,
   XMarkIcon,
@@ -59,6 +62,7 @@ const MobileMenu = ({
   const intl = useIntl();
   const [isOpen, setIsOpen] = useState(false);
   const { hasPermission } = useUser();
+  const settings = useSettings();
   const router = useRouter();
   useClickOutside(ref, () => {
     setTimeout(() => {
@@ -98,6 +102,13 @@ const MobileMenu = ({
       svgIcon: <ClockIcon className="h-6 w-6" />,
       svgIconSelected: <FilledClockIcon className="h-6 w-6" />,
       activeRegExp: /^\/requests/,
+    },
+    {
+      href: '/deletion-requests',
+      content: intl.formatMessage(menuMessages.deletionrequests),
+      svgIcon: <TrashIcon className="h-6 w-6" />,
+      svgIconSelected: <FilledTrashIcon className="h-6 w-6" />,
+      activeRegExp: /^\/deletion-requests/,
     },
     {
       href: '/blacklist',
@@ -144,13 +155,22 @@ const MobileMenu = ({
     },
   ];
 
-  const filteredLinks = menuLinks.filter(
-    (link) =>
+  const filteredLinks = menuLinks.filter((link) => {
+    // Filter out deletion requests if feature is disabled
+    if (
+      link.href === '/deletion-requests' &&
+      !settings.currentSettings.deletion?.enabled
+    ) {
+      return false;
+    }
+    // Filter by permissions
+    return (
       !link.requiredPermission ||
       hasPermission(link.requiredPermission, {
         type: link.permissionType ?? 'and',
       })
-  );
+    );
+  });
 
   useEffect(() => {
     if (openIssuesCount) {

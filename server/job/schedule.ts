@@ -1,5 +1,6 @@
 import { MediaServerType } from '@server/constants/server';
 import blacklistedTagsProcessor from '@server/job/blacklistedTagsProcessor';
+import deletionVoteProcessor from '@server/job/deletionVoteProcessor';
 import availabilitySync from '@server/lib/availabilitySync';
 import downloadTracker from '@server/lib/downloadtracker';
 import ImageProxy from '@server/lib/imageproxy';
@@ -252,6 +253,23 @@ export const startJobs = (): void => {
     }),
     running: () => blacklistedTagsProcessor.status().running,
     cancelFn: () => blacklistedTagsProcessor.cancel(),
+  });
+
+  // Process deletion requests with expired voting periods
+  scheduledJobs.push({
+    id: 'deletion-vote-processor',
+    name: 'Deletion Vote Processor',
+    type: 'process',
+    interval: 'hours',
+    cronSchedule: jobs['deletion-vote-processor'].schedule,
+    job: schedule.scheduleJob(jobs['deletion-vote-processor'].schedule, () => {
+      logger.info('Starting scheduled job: Deletion Vote Processor', {
+        label: 'Jobs',
+      });
+      deletionVoteProcessor.run();
+    }),
+    running: () => deletionVoteProcessor.status().running,
+    cancelFn: () => deletionVoteProcessor.cancel(),
   });
 
   logger.info('Scheduled jobs loaded', { label: 'Jobs' });
