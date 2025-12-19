@@ -22,7 +22,7 @@ import { useIntl } from 'react-intl';
 const messages = defineMessages(
   'components.DeletionRequest.DeletionRequestList',
   {
-    deletionRequests: 'Deletion Requests',
+    deletionRequests: 'Removals',
     showAllRequests: 'Show All Requests',
   }
 );

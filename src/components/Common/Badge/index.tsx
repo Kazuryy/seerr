@@ -9,7 +9,8 @@ interface BadgeProps {
     | 'warning'
     | 'success'
     | 'dark'
-    | 'light';
+    | 'light'
+    | 'emerald';
   className?: string;
   href?: string;
   children: React.ReactNode;
@@ -64,6 +65,14 @@ const Badge = (
       badgeStyle.push('bg-gray-700 !text-gray-300');
       if (href) {
         badgeStyle.push('hover:bg-gray-600');
+      }
+      break;
+    case 'emerald':
+      badgeStyle.push(
+        'bg-emerald-600 bg-opacity-80 border border-emerald-500 !text-emerald-100'
+      );
+      if (href) {
+        badgeStyle.push('hover:bg-emerald-600 hover:bg-opacity-100');
       }
       break;
     default:

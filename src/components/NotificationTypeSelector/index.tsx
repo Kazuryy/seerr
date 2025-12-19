@@ -64,6 +64,26 @@ const messages = defineMessages('components.NotificationTypeSelector', {
   mediaautorequested: 'Request Automatically Submitted',
   mediaautorequestedDescription:
     'Get notified when new media requests are automatically submitted for items on Your Watchlist.',
+  mediadeletionvoting: 'Deletion Voting Started',
+  mediadeletionvotingDescription:
+    'Send notifications when deletion voting starts for media.',
+  usermediadeletionvotingDescription:
+    'Get notified when deletion voting starts for media.',
+  mediadeletionapproved: 'Deletion Request Approved',
+  mediadeletionapprovedDescription:
+    'Send notifications when deletion requests are approved by community vote.',
+  usermediadeletionapprovedDescription:
+    'Get notified when deletion requests are approved.',
+  mediadeletionrejected: 'Deletion Request Rejected',
+  mediadeletionrejectedDescription:
+    'Send notifications when deletion requests are rejected by community vote.',
+  usermediadeletionrejectedDescription:
+    'Get notified when deletion requests are rejected.',
+  mediadeletioncompleted: 'Media Deleted',
+  mediadeletioncompletedDescription:
+    'Send notifications when media is permanently deleted.',
+  usermediadeletioncompletedDescription:
+    'Get notified when media is permanently deleted.',
 });
 
 export const hasNotificationType = (
@@ -106,6 +126,10 @@ export enum Notification {
   ISSUE_RESOLVED = 1024,
   ISSUE_REOPENED = 2048,
   MEDIA_AUTO_REQUESTED = 4096,
+  MEDIA_DELETION_VOTING = 8192,
+  MEDIA_DELETION_APPROVED = 16384,
+  MEDIA_DELETION_REJECTED = 32768,
+  MEDIA_DELETION_COMPLETED = 65536,
 }
 
 export const ALL_NOTIFICATIONS = Object.values(Notification)
@@ -354,6 +378,54 @@ const NotificationTypeSelector = ({
           }),
         hasNotifyUser:
           !user || hasPermission(Permission.MANAGE_ISSUES) ? false : true,
+      },
+      {
+        id: 'media-deletion-voting',
+        name: intl.formatMessage(messages.mediadeletionvoting),
+        description: intl.formatMessage(
+          user
+            ? messages.usermediadeletionvotingDescription
+            : messages.mediadeletionvotingDescription
+        ),
+        value: Notification.MEDIA_DELETION_VOTING,
+        hidden: user && !hasPermission(Permission.MANAGE_REQUESTS),
+        hasNotifyUser: false,
+      },
+      {
+        id: 'media-deletion-approved',
+        name: intl.formatMessage(messages.mediadeletionapproved),
+        description: intl.formatMessage(
+          user
+            ? messages.usermediadeletionapprovedDescription
+            : messages.mediadeletionapprovedDescription
+        ),
+        value: Notification.MEDIA_DELETION_APPROVED,
+        hidden: user && !hasPermission(Permission.MANAGE_REQUESTS),
+        hasNotifyUser: false,
+      },
+      {
+        id: 'media-deletion-rejected',
+        name: intl.formatMessage(messages.mediadeletionrejected),
+        description: intl.formatMessage(
+          user
+            ? messages.usermediadeletionrejectedDescription
+            : messages.mediadeletionrejectedDescription
+        ),
+        value: Notification.MEDIA_DELETION_REJECTED,
+        hidden: user && !hasPermission(Permission.MANAGE_REQUESTS),
+        hasNotifyUser: false,
+      },
+      {
+        id: 'media-deletion-completed',
+        name: intl.formatMessage(messages.mediadeletioncompleted),
+        description: intl.formatMessage(
+          user
+            ? messages.usermediadeletioncompletedDescription
+            : messages.mediadeletioncompletedDescription
+        ),
+        value: Notification.MEDIA_DELETION_COMPLETED,
+        hidden: user && !hasPermission(Permission.MANAGE_REQUESTS),
+        hasNotifyUser: false,
       },
     ];
 

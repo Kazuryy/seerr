@@ -71,6 +71,8 @@ const globalMessages = defineMessages('i18n', {
   voting: 'Voting',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
+  removals: 'Removals',
+  mediaRemovals: 'Media Removals',
 });
 
 export default globalMessages;
