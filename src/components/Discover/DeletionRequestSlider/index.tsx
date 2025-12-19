@@ -14,7 +14,7 @@ const DeletionRequestSlider = () => {
   const intl = useIntl();
   const settings = useSettings();
 
-  const { data, mutate } = useDeletionRequests({
+  const { data, mutate, isLoading } = useDeletionRequests({
     pageSize: 20,
     status: DeletionRequestStatus.VOTING,
   });
@@ -24,8 +24,8 @@ const DeletionRequestSlider = () => {
     return null;
   }
 
-  // Don't show if no voting requests
-  if (data && data.results.length === 0) {
+  // Don't show while loading or if no voting requests
+  if (isLoading || !data || data.results.length === 0) {
     return null;
   }
 

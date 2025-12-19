@@ -19,11 +19,17 @@ class DeletionVoteProcessor implements RunnableScanner<StatusBase> {
   private deletionService = new DeletionService();
 
   public async run() {
+    const startTime = Date.now();
     const settings = getSettings();
+
+    logger.info('🗳️ Deletion Vote Processor starting...', {
+      label: 'Deletion Vote Processor',
+      timestamp: new Date().toISOString(),
+    });
 
     // Check if deletion feature is enabled
     if (!settings.main.deletion.enabled) {
-      logger.debug('Deletion feature is disabled, skipping vote processing', {
+      logger.info('Deletion feature is disabled, skipping vote processing', {
         label: 'Deletion Vote Processor',
       });
       return;
@@ -46,8 +52,9 @@ class DeletionVoteProcessor implements RunnableScanner<StatusBase> {
       this.total = expiredRequests.length;
 
       if (expiredRequests.length === 0) {
-        logger.debug('No expired deletion requests to process', {
+        logger.info('No expired deletion requests to process', {
           label: 'Deletion Vote Processor',
+          timestamp: new Date().toISOString(),
         });
         return;
       }
@@ -97,16 +104,23 @@ class DeletionVoteProcessor implements RunnableScanner<StatusBase> {
         }
       }
 
+      const duration = Date.now() - startTime;
       logger.info(
-        `Completed processing ${this.progress}/${this.total} deletion requests`,
+        `✅ Completed processing ${this.progress}/${this.total} deletion requests`,
         {
           label: 'Deletion Vote Processor',
+          duration: `${duration}ms`,
+          timestamp: new Date().toISOString(),
         }
       );
     } catch (error) {
-      logger.error('Error in deletion vote processor', {
+      const duration = Date.now() - startTime;
+      logger.error('❌ Error in deletion vote processor', {
         label: 'Deletion Vote Processor',
         errorMessage: error.message,
+        stack: error.stack,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString(),
       });
     } finally {
       this.reset();

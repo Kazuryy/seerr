@@ -102,11 +102,13 @@ const DeletionSliderCard = ({
   const getButtonType = (voteValue: boolean) => {
     if (!userVote) {
       // Not voted - show active buttons
-      return voteValue ? 'success' : 'danger';
+      // false = Keep = success (green), true = Remove = danger (red)
+      return voteValue ? 'danger' : 'success';
     }
     if (userVote.vote === voteValue) {
       // This is the voted button - highlight it
-      return voteValue ? 'success' : 'danger';
+      // false = Keep = success (green), true = Remove = danger (red)
+      return voteValue ? 'danger' : 'success';
     }
     // Other button - make it ghost/inactive
     return 'ghost';
@@ -116,22 +118,26 @@ const DeletionSliderCard = ({
     if (userVote && userVote.vote === voteValue) {
       return <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" />;
     }
+    // false = AGAINST deletion = Keep = CheckIcon
+    // true = FOR deletion = Remove = TrashIcon
     return voteValue ? (
-      <CheckIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-    ) : (
       <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+    ) : (
+      <CheckIcon className="h-4 w-4 sm:h-5 sm:w-5" />
     );
   };
 
   const getButtonText = (voteValue: boolean) => {
+    // false = AGAINST deletion = Keep
+    // true = FOR deletion = Remove
     if (userVote && userVote.vote === voteValue) {
       return voteValue
-        ? intl.formatMessage(messages.keepIt)
-        : intl.formatMessage(messages.removeIt);
+        ? intl.formatMessage(messages.removeIt)
+        : intl.formatMessage(messages.keepIt);
     }
     return voteValue
-      ? intl.formatMessage(messages.keepIt)
-      : intl.formatMessage(messages.removeIt);
+      ? intl.formatMessage(messages.removeIt)
+      : intl.formatMessage(messages.keepIt);
   };
 
   const getStatusBadge = () => {
@@ -156,7 +162,7 @@ const DeletionSliderCard = ({
         );
       case DeletionRequestStatus.COMPLETED:
         return (
-          <Badge badgeType="dark">
+          <Badge badgeType="emerald">
             {intl.formatMessage(globalMessages.completed)}
           </Badge>
         );
@@ -231,15 +237,7 @@ const DeletionSliderCard = ({
         <div className="flex flex-1 items-end space-x-2">
           {isVotingActive ? (
             <>
-              <Button
-                buttonType={getButtonType(true)}
-                disabled={isVoting}
-                onClick={(e) => handleButtonClick(true, e)}
-                buttonSize="sm"
-              >
-                <span className="hidden sm:inline">{getButtonIcon(true)}</span>
-                <span>{getButtonText(true)}</span>
-              </Button>
+              {/* Keep button - vote AGAINST deletion (false) */}
               <Button
                 buttonType={getButtonType(false)}
                 disabled={isVoting}
@@ -248,6 +246,16 @@ const DeletionSliderCard = ({
               >
                 <span className="hidden sm:inline">{getButtonIcon(false)}</span>
                 <span>{getButtonText(false)}</span>
+              </Button>
+              {/* Remove button - vote FOR deletion (true) */}
+              <Button
+                buttonType={getButtonType(true)}
+                disabled={isVoting}
+                onClick={(e) => handleButtonClick(true, e)}
+                buttonSize="sm"
+              >
+                <span className="hidden sm:inline">{getButtonIcon(true)}</span>
+                <span>{getButtonText(true)}</span>
               </Button>
             </>
           ) : (

@@ -29,7 +29,7 @@ export const menuMessages = defineMessages('components.Layout.Sidebar', {
   browsemovies: 'Movies',
   browsetv: 'Series',
   requests: 'Requests',
-  deletionrequests: 'Deletion Requests',
+  deletionrequests: 'Removals',
   blacklist: 'Blacklist',
   issues: 'Issues',
   users: 'Users',

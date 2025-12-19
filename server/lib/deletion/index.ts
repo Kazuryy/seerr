@@ -9,6 +9,7 @@ import {
 import { DeletionVote } from '@server/entity/DeletionVote';
 import Media from '@server/entity/Media';
 import type { User } from '@server/entity/User';
+import notificationManager, { Notification } from '@server/lib/notifications';
 import { Permission } from '@server/lib/permissions';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
@@ -63,7 +64,13 @@ class DeletionService {
     requestedBy: User;
   }): Promise<DeletionRequest> {
     const deletionRequestRepository = getRepository(DeletionRequest);
+    const mediaRepository = getRepository(Media);
     const settings = getSettings();
+
+    // Get media object for notifications
+    const media = await mediaRepository.findOne({
+      where: { id: mediaId },
+    });
 
     // Calculate voting end time (add hours as milliseconds)
     const votingDurationHours = settings.main.deletion.votingDurationHours;
@@ -96,11 +103,63 @@ class DeletionService {
       }
     );
 
+    // Send notification for deletion voting started
+    if (media) {
+      try {
+        const mediaTypeString =
+          mediaType === MediaType.MOVIE ? 'Movie' : 'Series';
+
+        notificationManager.sendNotification(
+          Notification.MEDIA_DELETION_VOTING,
+          {
+            event: `${mediaTypeString} Deletion Voting Started`,
+            subject: title,
+            message: reason || 'No reason provided',
+            media,
+            image: posterPath
+              ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${posterPath}`
+              : undefined,
+            notifyAdmin: true,
+            notifySystem: true,
+            extra: [
+              {
+                name: 'Requested By',
+                value:
+                  requestedBy.displayName ||
+                  requestedBy.jellyfinUsername ||
+                  requestedBy.plexUsername ||
+                  requestedBy.email ||
+                  'Unknown',
+              },
+              {
+                name: 'Voting Ends',
+                value: votingEndsAt.toLocaleString('en-US', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                }),
+              },
+              {
+                name: 'Duration',
+                value: `${votingDurationHours} hours`,
+              },
+            ],
+          }
+        );
+      } catch (error) {
+        logger.error('Failed to send deletion voting notification', {
+          label: 'Deletion Service',
+          error: error.message,
+          deletionRequestId: deletionRequest.id,
+        });
+      }
+    }
+
     return deletionRequest;
   }
 
   /**
    * Vote on a deletion request
+   * @param vote - true = FOR deletion (remove), false = AGAINST deletion (keep)
    */
   public async voteOnDeletion({
     deletionRequestId,
@@ -109,7 +168,7 @@ class DeletionService {
   }: {
     deletionRequestId: number;
     user: User;
-    vote: boolean;
+    vote: boolean; // true = FOR deletion (remove), false = AGAINST deletion (keep)
   }): Promise<DeletionVote> {
     const deletionRequestRepository = getRepository(DeletionRequest);
     const deletionVoteRepository = getRepository(DeletionVote);
@@ -245,6 +304,7 @@ class DeletionService {
     deletionRequestId: number
   ): Promise<DeletionRequest> {
     const deletionRequestRepository = getRepository(DeletionRequest);
+    const mediaRepository = getRepository(Media);
     const settings = getSettings();
 
     const deletionRequest = await deletionRequestRepository.findOne({
@@ -256,6 +316,11 @@ class DeletionService {
       throw new DeletionNotFoundError();
     }
 
+    // Get media object for notifications
+    const media = await mediaRepository.findOne({
+      where: { id: deletionRequest.mediaId },
+    });
+
     // Check if voting period has ended
     if (new Date() < new Date(deletionRequest.votingEndsAt)) {
       throw new Error('Voting period has not ended yet');
@@ -266,11 +331,27 @@ class DeletionService {
       throw new InvalidStatusError('Request is not in voting status');
     }
 
-    // Calculate vote percentage
+    // Calculate vote percentage for deletion
+    // votePercentage = (votesFor / totalVotes) * 100
+    // votesFor = votes FOR deletion (true votes)
     const votePercentage = deletionRequest.getVotePercentage();
     const requiredPercentage = settings.main.deletion.requiredVotePercentage;
 
+    logger.info('🔍 Processing deletion request vote', {
+      label: 'Deletion Service',
+      deletionRequestId,
+      title: deletionRequest.title,
+      votePercentage: votePercentage.toFixed(1),
+      requiredPercentage,
+      autoDeleteEnabled: settings.main.deletion.autoDeleteOnApproval,
+      votesFor: deletionRequest.votesFor,
+      votesAgainst: deletionRequest.votesAgainst,
+      currentStatus: deletionRequest.status,
+    });
+
     // Determine if approved or rejected
+    // If enough votes FOR deletion → APPROVED (will be deleted)
+    // Otherwise → REJECTED (will be kept)
     if (votePercentage >= requiredPercentage) {
       deletionRequest.status = DeletionRequestStatus.APPROVED;
       logger.info(
@@ -284,19 +365,113 @@ class DeletionService {
         }
       );
 
-      // Auto-delete if enabled
-      if (settings.main.deletion.autoDeleteOnApproval) {
+      // Send notification for approval
+      if (media) {
         try {
-          await this.executeMediaDeletion({
-            deletionRequestId,
-            processedBy: deletionRequest.requestedBy,
-          });
+          const mediaTypeString =
+            deletionRequest.mediaType === MediaType.MOVIE ? 'Movie' : 'Series';
+          const totalVotes =
+            deletionRequest.votesFor + deletionRequest.votesAgainst;
+
+          notificationManager.sendNotification(
+            Notification.MEDIA_DELETION_APPROVED,
+            {
+              event: `${mediaTypeString} Deletion Request Approved`,
+              subject: deletionRequest.title,
+              message: `Deletion approved with ${votePercentage.toFixed(
+                1
+              )}% voting for removal (${
+                deletionRequest.votesFor
+              }/${totalVotes} votes)`,
+              media,
+              image: deletionRequest.posterPath
+                ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${deletionRequest.posterPath}`
+                : undefined,
+              notifyAdmin: true,
+              notifySystem: true,
+              extra: [
+                {
+                  name: 'Votes',
+                  value: `${deletionRequest.votesFor} for removal, ${deletionRequest.votesAgainst} to keep`,
+                },
+                {
+                  name: 'Percentage',
+                  value: `${votePercentage.toFixed(1)}% voted for removal`,
+                },
+                {
+                  name: 'Status',
+                  value: settings.main.deletion.autoDeleteOnApproval
+                    ? 'Auto-deleting...'
+                    : 'Awaiting admin execution',
+                },
+              ],
+            }
+          );
         } catch (error) {
-          logger.error('Failed to auto-delete media after approval', {
+          logger.error('Failed to send deletion approved notification', {
             label: 'Deletion Service',
             error: error.message,
             deletionRequestId,
           });
+        }
+      }
+
+      // Auto-delete if enabled
+      if (settings.main.deletion.autoDeleteOnApproval) {
+        logger.info(
+          '🚀 Auto-deletion enabled, executing deletion immediately',
+          {
+            label: 'Deletion Service',
+            deletionRequestId,
+            title: deletionRequest.title,
+          }
+        );
+
+        try {
+          // Execute deletion (this will save with COMPLETED status)
+          await this.executeMediaDeletion({
+            deletionRequestId,
+            processedBy: deletionRequest.requestedBy,
+          });
+
+          // Reload the request to get the updated COMPLETED status
+          const completedRequest = await deletionRequestRepository.findOne({
+            where: { id: deletionRequestId },
+            relations: ['requestedBy', 'processedBy'],
+          });
+
+          logger.info('✅ Auto-deletion completed successfully', {
+            label: 'Deletion Service',
+            deletionRequestId,
+            title: deletionRequest.title,
+            finalStatus: completedRequest?.status,
+            processedAt: completedRequest?.processedAt,
+          });
+
+          // Return early - executeMediaDeletion already saved with COMPLETED status
+          // Don't save again or we'll overwrite with APPROVED
+          return completedRequest || deletionRequest;
+        } catch (error) {
+          logger.error('❌ Failed to auto-delete media after approval', {
+            label: 'Deletion Service',
+            error: error.message,
+            stack: error.stack,
+            deletionRequestId,
+            title: deletionRequest.title,
+          });
+          // CRITICAL FIX: Save with APPROVED status and return early
+          // Don't let execution continue to line 522 where we would save with stale APPROVED status
+          deletionRequest.processedAt = new Date();
+          await deletionRequestRepository.save(deletionRequest);
+
+          logger.info('💾 Saved as APPROVED after auto-delete failure', {
+            label: 'Deletion Service',
+            deletionRequestId,
+            status: deletionRequest.status,
+            processedAt: deletionRequest.processedAt,
+          });
+
+          return deletionRequest;
         }
       }
     } else {
@@ -311,6 +486,56 @@ class DeletionService {
           votesAgainst: deletionRequest.votesAgainst,
         }
       );
+
+      // Send notification for rejection
+      if (media) {
+        try {
+          const mediaTypeString =
+            deletionRequest.mediaType === MediaType.MOVIE ? 'Movie' : 'Series';
+          const totalVotes =
+            deletionRequest.votesFor + deletionRequest.votesAgainst;
+          const votesAgainstPercentage = 100 - votePercentage;
+
+          notificationManager.sendNotification(
+            Notification.MEDIA_DELETION_REJECTED,
+            {
+              event: `${mediaTypeString} Deletion Request Rejected`,
+              subject: deletionRequest.title,
+              message: `Deletion rejected with ${votesAgainstPercentage.toFixed(
+                1
+              )}% voting to keep (${
+                deletionRequest.votesAgainst
+              }/${totalVotes} votes)`,
+              media,
+              image: deletionRequest.posterPath
+                ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${deletionRequest.posterPath}`
+                : undefined,
+              notifyAdmin: true,
+              notifySystem: true,
+              extra: [
+                {
+                  name: 'Votes',
+                  value: `${deletionRequest.votesAgainst} to keep, ${deletionRequest.votesFor} for removal`,
+                },
+                {
+                  name: 'Percentage',
+                  value: `${votesAgainstPercentage.toFixed(1)}% voted to keep`,
+                },
+                {
+                  name: 'Status',
+                  value: 'Media will remain available',
+                },
+              ],
+            }
+          );
+        } catch (error) {
+          logger.error('Failed to send deletion rejected notification', {
+            label: 'Deletion Service',
+            error: error.message,
+            deletionRequestId,
+          });
+        }
+      }
     }
 
     await deletionRequestRepository.save(deletionRequest);
@@ -328,6 +553,13 @@ class DeletionService {
     deletionRequestId: number;
     processedBy: User;
   }): Promise<DeletionRequest> {
+    logger.info('🎬 executeMediaDeletion called', {
+      label: 'Deletion Service',
+      deletionRequestId,
+      processedById: processedBy?.id,
+      processedByName: processedBy?.displayName,
+    });
+
     const deletionRequestRepository = getRepository(DeletionRequest);
     const mediaRepository = getRepository(Media);
     const settings = getSettings();
@@ -335,6 +567,14 @@ class DeletionService {
     const deletionRequest = await deletionRequestRepository.findOne({
       where: { id: deletionRequestId },
       relations: ['requestedBy', 'processedBy'],
+    });
+
+    logger.info('📄 Deletion request loaded', {
+      label: 'Deletion Service',
+      deletionRequestId,
+      found: !!deletionRequest,
+      status: deletionRequest?.status,
+      title: deletionRequest?.title,
     });
 
     if (!deletionRequest) {
@@ -370,38 +610,113 @@ class DeletionService {
         const radarrSettings = settings.radarr.find(
           (r) => !r.is4k && r.isDefault
         );
-        if (radarrSettings) {
-          const radarr = new RadarrAPI({
-            url: RadarrAPI.buildUrl(radarrSettings, '/api/v3'),
-            apiKey: radarrSettings.apiKey,
-          });
-          await radarr.removeMovie(deletionRequest.tmdbId);
-          logger.info(
-            `Movie removed from Radarr: ${deletionRequest.title} (${deletionRequest.tmdbId})`,
+        if (!radarrSettings) {
+          logger.warn(
+            'No default Radarr server configured, skipping Radarr deletion',
             {
               label: 'Deletion Service',
               deletionRequestId,
             }
           );
+        } else {
+          try {
+            const radarr = new RadarrAPI({
+              url: RadarrAPI.buildUrl(radarrSettings, '/api/v3'),
+              apiKey: radarrSettings.apiKey,
+            });
+            await radarr.removeMovie(deletionRequest.tmdbId);
+            logger.info(
+              `Movie removed from Radarr: ${deletionRequest.title} (TMDB: ${deletionRequest.tmdbId})`,
+              {
+                label: 'Deletion Service',
+                deletionRequestId,
+              }
+            );
+          } catch (radarrError) {
+            // Handle 404 - media already deleted from Radarr
+            if (radarrError.response?.status === 404) {
+              logger.info(
+                'Movie already deleted from Radarr (404), continuing',
+                {
+                  label: 'Deletion Service',
+                  deletionRequestId,
+                  tmdbId: deletionRequest.tmdbId,
+                }
+              );
+            } else {
+              // Log error but don't fail the entire deletion
+              logger.error(
+                'Failed to delete movie from Radarr, but continuing with local deletion',
+                {
+                  label: 'Deletion Service',
+                  deletionRequestId,
+                  error: radarrError.message,
+                }
+              );
+            }
+          }
         }
       } else if (deletionRequest.mediaType === MediaType.TV) {
         // Delete from Sonarr
         const sonarrSettings = settings.sonarr.find(
           (s) => !s.is4k && s.isDefault
         );
-        if (sonarrSettings) {
-          const sonarr = new SonarrAPI({
-            url: SonarrAPI.buildUrl(sonarrSettings, '/api/v3'),
-            apiKey: sonarrSettings.apiKey,
-          });
-          await sonarr.removeSeries(deletionRequest.tmdbId);
-          logger.info(
-            `Series removed from Sonarr: ${deletionRequest.title} (${deletionRequest.tmdbId})`,
+        if (!sonarrSettings) {
+          logger.warn(
+            'No default Sonarr server configured, skipping Sonarr deletion',
             {
               label: 'Deletion Service',
               deletionRequestId,
             }
           );
+        } else if (!media.tvdbId) {
+          logger.warn(
+            `Cannot delete series from Sonarr: TVDB ID not found for ${deletionRequest.title}`,
+            {
+              label: 'Deletion Service',
+              deletionRequestId,
+              tmdbId: deletionRequest.tmdbId,
+            }
+          );
+        } else {
+          try {
+            const sonarr = new SonarrAPI({
+              url: SonarrAPI.buildUrl(sonarrSettings, '/api/v3'),
+              apiKey: sonarrSettings.apiKey,
+            });
+            // Use TVDB ID for Sonarr (not TMDB ID)
+            await sonarr.removeSeries(media.tvdbId);
+            logger.info(
+              `Series removed from Sonarr: ${deletionRequest.title} (TVDB: ${media.tvdbId})`,
+              {
+                label: 'Deletion Service',
+                deletionRequestId,
+                tvdbId: media.tvdbId,
+              }
+            );
+          } catch (sonarrError) {
+            // Handle 404 - series already deleted from Sonarr
+            if (sonarrError.response?.status === 404) {
+              logger.info(
+                'Series already deleted from Sonarr (404), continuing',
+                {
+                  label: 'Deletion Service',
+                  deletionRequestId,
+                  tvdbId: media.tvdbId,
+                }
+              );
+            } else {
+              // Log error but don't fail the entire deletion
+              logger.error(
+                'Failed to delete series from Sonarr, but continuing with local deletion',
+                {
+                  label: 'Deletion Service',
+                  deletionRequestId,
+                  error: sonarrError.message,
+                }
+              );
+            }
+          }
         }
       }
 
@@ -410,16 +725,73 @@ class DeletionService {
       deletionRequest.processedAt = new Date();
       deletionRequest.processedBy = processedBy;
 
+      logger.info('💾 Saving deletion request as COMPLETED', {
+        label: 'Deletion Service',
+        deletionRequestId,
+        title: deletionRequest.title,
+        status: deletionRequest.status,
+        processedAt: deletionRequest.processedAt,
+      });
+
       await deletionRequestRepository.save(deletionRequest);
 
       logger.info(
-        `Deletion request ${deletionRequestId} completed successfully`,
+        `✅ Deletion request ${deletionRequestId} completed successfully`,
         {
           label: 'Deletion Service',
+          title: deletionRequest.title,
           mediaType: deletionRequest.mediaType,
           tmdbId: deletionRequest.tmdbId,
         }
       );
+
+      // Send notification for deletion completed
+      if (media) {
+        try {
+          const mediaTypeString =
+            deletionRequest.mediaType === MediaType.MOVIE ? 'Movie' : 'Series';
+
+          notificationManager.sendNotification(
+            Notification.MEDIA_DELETION_COMPLETED,
+            {
+              event: `${mediaTypeString} Deleted`,
+              subject: deletionRequest.title,
+              message: 'Media has been permanently deleted from the server',
+              media,
+              image: deletionRequest.posterPath
+                ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${deletionRequest.posterPath}`
+                : undefined,
+              notifyAdmin: true,
+              notifySystem: true,
+              extra: [
+                {
+                  name: 'Deleted By',
+                  value:
+                    processedBy.displayName ||
+                    processedBy.jellyfinUsername ||
+                    processedBy.plexUsername ||
+                    processedBy.email ||
+                    'Unknown',
+                },
+                {
+                  name: 'Final Vote',
+                  value: `${deletionRequest.votesFor} for removal, ${deletionRequest.votesAgainst} to keep`,
+                },
+                {
+                  name: 'Files',
+                  value: 'Removed from disk',
+                },
+              ],
+            }
+          );
+        } catch (error) {
+          logger.error('Failed to send deletion completed notification', {
+            label: 'Deletion Service',
+            error: error.message,
+            deletionRequestId,
+          });
+        }
+      }
 
       return deletionRequest;
     } catch (error) {

@@ -127,6 +127,7 @@ export interface DeletionSettings {
   votingDurationHours: number;
   requiredVotePercentage: number;
   autoDeleteOnApproval: boolean;
+  discordRoleId?: string;
 }
 
 export interface MainSettings {

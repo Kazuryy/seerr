@@ -31,6 +31,9 @@ const messages = defineMessages('components.Settings.SettingsDeletion', {
   autoDeleteOnApproval: 'Auto-Delete on Approval',
   autoDeleteOnApprovalTip:
     'Automatically delete media when a deletion request is approved. When disabled, approved deletions must be processed manually.',
+  discordRoleId: 'Discord Role ID to Mention',
+  discordRoleIdTip:
+    'Optional Discord role ID to mention when deletion voting starts. Leave empty to use @everyone. To get a role ID: Server Settings → Roles → Right-click role → Copy ID (requires Developer Mode)',
   toastSettingsSuccess: 'Deletion settings saved successfully!',
   toastSettingsFailure: 'Something went wrong while saving deletion settings.',
   validationVotingDuration: 'Voting duration must be at least 1 hour',
@@ -86,6 +89,7 @@ const SettingsDeletion = () => {
             requiredVotePercentage:
               data?.deletion?.requiredVotePercentage ?? 60,
             autoDeleteOnApproval: data?.deletion?.autoDeleteOnApproval ?? false,
+            discordRoleId: data?.deletion?.discordRoleId ?? '',
           }}
           enableReinitialize
           validationSchema={DeletionSettingsSchema}
@@ -99,6 +103,7 @@ const SettingsDeletion = () => {
                   votingDurationHours: values.votingDurationHours,
                   requiredVotePercentage: values.requiredVotePercentage,
                   autoDeleteOnApproval: values.autoDeleteOnApproval,
+                  discordRoleId: values.discordRoleId.trim() || undefined,
                 },
               });
 
@@ -250,6 +255,22 @@ const SettingsDeletion = () => {
                           !values.autoDeleteOnApproval
                         );
                       }}
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="discordRoleId" className="text-label">
+                    <span>{intl.formatMessage(messages.discordRoleId)}</span>
+                    <span className="label-tip">
+                      {intl.formatMessage(messages.discordRoleIdTip)}
+                    </span>
+                  </label>
+                  <div className="form-input-area">
+                    <Field
+                      id="discordRoleId"
+                      name="discordRoleId"
+                      type="text"
+                      placeholder="1234567890123456789"
                     />
                   </div>
                 </div>
