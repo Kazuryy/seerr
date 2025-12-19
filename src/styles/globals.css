@@ -43,6 +43,44 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Fix mobile tap highlights globally */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* iPhone Safari button tap fix */
+  @supports (-webkit-touch-callout: none) {
+    button {
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      transform: translate3d(0, 0, 0) !important;
+      -webkit-transform: translate3d(0, 0, 0) !important;
+      backface-visibility: hidden !important;
+      -webkit-backface-visibility: hidden !important;
+    }
+
+    button:active {
+      opacity: 1 !important;
+      background-image: none !important;
+    }
+
+    @media (max-width: 428px) and (orientation: portrait) {
+      button {
+        will-change: transform !important;
+      }
+    }
+  }
+
   code {
     @apply rounded-md bg-gray-800 px-2 py-1;
   }

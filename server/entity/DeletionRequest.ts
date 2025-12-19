@@ -102,11 +102,16 @@ export class DeletionRequest {
     return this.votesFor + this.votesAgainst;
   }
 
+  /**
+   * Get the percentage of votes FOR deletion
+   * @returns Percentage of votes in favor of deletion (0-100)
+   */
   public getVotePercentage(): number {
     const total = this.getTotalVotes();
     if (total === 0) {
       return 0;
     }
+    // votesFor = votes FOR deletion (true votes)
     return (this.votesFor / total) * 100;
   }
 

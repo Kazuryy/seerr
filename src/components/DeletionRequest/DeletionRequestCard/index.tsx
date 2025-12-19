@@ -172,7 +172,7 @@ const DeletionRequestCard = ({ request, onVote }: DeletionRequestCardProps) => {
         );
       case DeletionRequestStatus.COMPLETED:
         return (
-          <Badge badgeType="dark">
+          <Badge badgeType="emerald">
             {intl.formatMessage(globalMessages.completed)}
           </Badge>
         );
@@ -332,18 +332,9 @@ const DeletionRequestCard = ({ request, onVote }: DeletionRequestCardProps) => {
           {/* Compact Vote Progress */}
           <div className="mt-1 flex items-center gap-2">
             <div className="flex h-2 w-32 overflow-hidden rounded-full bg-gray-700">
+              {/* votesAgainst = Keep votes = GREEN */}
               <div
                 className="bg-green-500 transition-all duration-300"
-                style={{
-                  width: `${
-                    request.totalVotes === 0
-                      ? 50
-                      : (request.votesFor / request.totalVotes) * 100
-                  }%`,
-                }}
-              />
-              <div
-                className="bg-red-500 transition-all duration-300"
                 style={{
                   width: `${
                     request.totalVotes === 0
@@ -352,17 +343,28 @@ const DeletionRequestCard = ({ request, onVote }: DeletionRequestCardProps) => {
                   }%`,
                 }}
               />
+              {/* votesFor = Remove votes = RED */}
+              <div
+                className="bg-red-500 transition-all duration-300"
+                style={{
+                  width: `${
+                    request.totalVotes === 0
+                      ? 50
+                      : (request.votesFor / request.totalVotes) * 100
+                  }%`,
+                }}
+              />
             </div>
             <div className="flex gap-2 text-xs">
               <span className="text-green-400">
-                {intl.formatMessage(messages.votesFor, {
-                  count: request.votesFor,
+                {intl.formatMessage(messages.votesAgainst, {
+                  count: request.votesAgainst,
                 })}
               </span>
               <span>•</span>
               <span className="text-red-400">
-                {intl.formatMessage(messages.votesAgainst, {
-                  count: request.votesAgainst,
+                {intl.formatMessage(messages.votesFor, {
+                  count: request.votesFor,
                 })}
               </span>
             </div>
@@ -371,13 +373,14 @@ const DeletionRequestCard = ({ request, onVote }: DeletionRequestCardProps) => {
           {/* User's Vote Status */}
           {userVote && (
             <div className="text-xs">
+              {/* userVote.vote: false = Keep, true = Remove */}
               {userVote.vote ? (
-                <span className="text-green-400">
-                  {intl.formatMessage(messages.youVotedKeep)}
-                </span>
-              ) : (
                 <span className="text-red-400">
                   {intl.formatMessage(messages.youVotedRemove)}
+                </span>
+              ) : (
+                <span className="text-green-400">
+                  {intl.formatMessage(messages.youVotedKeep)}
                 </span>
               )}
             </div>
@@ -390,22 +393,24 @@ const DeletionRequestCard = ({ request, onVote }: DeletionRequestCardProps) => {
         {/* Vote Buttons - Only when voting is active */}
         {request.isVotingActive && userVote === null && (
           <div className="flex w-full flex-row space-x-2">
+            {/* Keep button - vote AGAINST deletion (false) */}
             <span className="w-full">
               <Button
                 className="w-full"
                 buttonType="success"
-                onClick={() => handleVote(true)}
+                onClick={() => handleVote(false)}
                 disabled={isVoting}
               >
                 <CheckIcon />
                 <span>{intl.formatMessage(messages.voteKeep)}</span>
               </Button>
             </span>
+            {/* Remove button - vote FOR deletion (true) */}
             <span className="w-full">
               <Button
                 className="w-full"
                 buttonType="danger"
-                onClick={() => handleVote(false)}
+                onClick={() => handleVote(true)}
                 disabled={isVoting}
               >
                 <TrashIcon />

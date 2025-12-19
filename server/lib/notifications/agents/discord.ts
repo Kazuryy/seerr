@@ -298,8 +298,22 @@ class DiscordAgent
         }
       }
 
+      // Handle role mentions
       if (settings.options.webhookRoleId) {
         userMentions.push(`<@&${settings.options.webhookRoleId}>`);
+      }
+
+      // Handle deletion-specific role mentions
+      if (
+        type === Notification.MEDIA_DELETION_VOTING &&
+        getSettings().main.deletion?.discordRoleId
+      ) {
+        const deletionRoleId = getSettings().main.deletion.discordRoleId;
+        const roleMention = `<@&${deletionRoleId}>`;
+        // Only add if not already present
+        if (!userMentions.includes(roleMention)) {
+          userMentions.push(roleMention);
+        }
       }
 
       await axios.post(settings.options.webhookUrl, {

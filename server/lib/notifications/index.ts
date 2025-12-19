@@ -17,6 +17,10 @@ export enum Notification {
   ISSUE_RESOLVED = 1024,
   ISSUE_REOPENED = 2048,
   MEDIA_AUTO_REQUESTED = 4096,
+  MEDIA_DELETION_VOTING = 8192,
+  MEDIA_DELETION_APPROVED = 16384,
+  MEDIA_DELETION_REJECTED = 32768,
+  MEDIA_DELETION_COMPLETED = 65536,
 }
 
 export const hasNotificationType = (
@@ -53,6 +57,10 @@ export const getAdminPermission = (type: Notification): Permission => {
     case Notification.MEDIA_FAILED:
     case Notification.MEDIA_DECLINED:
     case Notification.MEDIA_AUTO_APPROVED:
+    case Notification.MEDIA_DELETION_VOTING:
+    case Notification.MEDIA_DELETION_APPROVED:
+    case Notification.MEDIA_DELETION_REJECTED:
+    case Notification.MEDIA_DELETION_COMPLETED:
       return Permission.MANAGE_REQUESTS;
     case Notification.ISSUE_CREATED:
     case Notification.ISSUE_COMMENT:

@@ -19,12 +19,8 @@ const messages = defineMessages('components.Media.DeletionRequestButton', {
   deletionRequestSubtitle: 'Request deletion of "{title}"',
   reasonLabel: 'Reason (optional)',
   reasonPlaceholder: 'Why should this media be deleted?',
-  votingInfo: 'Voting Information',
-  votingDuration: 'Voting Duration: {hours} hours',
-  requiredPercentage: 'Required Approval: {percentage}%',
-  autoDelete: 'Auto-delete on approval: {enabled}',
-  yes: 'Yes',
-  no: 'No',
+  communityVoteWarning:
+    'Other users will vote on this request. If approved by the community, the media will be permanently deleted.',
   cancel: 'Cancel',
   submit: 'Submit Request',
   successMessage: 'Deletion request created successfully!',
@@ -153,13 +149,6 @@ const DeletionRequestButton = ({
     setReason('');
   };
 
-  const votingDurationHours =
-    settings.currentSettings.deletion?.votingDurationHours || 48;
-  const requiredPercentage =
-    settings.currentSettings.deletion?.requiredVotePercentage || 60;
-  const autoDelete =
-    settings.currentSettings.deletion?.autoDeleteOnApproval || false;
-
   return (
     <>
       <Tooltip content={intl.formatMessage(messages.requestDeletion)}>
@@ -219,30 +208,12 @@ const DeletionRequestButton = ({
               </div>
             </div>
 
-            {/* Voting Information */}
-            <div className="rounded-md bg-gray-700 p-4">
-              <h3 className="mb-2 text-sm font-medium text-gray-200">
-                {intl.formatMessage(messages.votingInfo)}
-              </h3>
-              <ul className="space-y-1 text-sm text-gray-400">
-                <li>
-                  {intl.formatMessage(messages.votingDuration, {
-                    hours: votingDurationHours,
-                  })}
-                </li>
-                <li>
-                  {intl.formatMessage(messages.requiredPercentage, {
-                    percentage: requiredPercentage,
-                  })}
-                </li>
-                <li>
-                  {intl.formatMessage(messages.autoDelete, {
-                    enabled: intl.formatMessage(
-                      autoDelete ? messages.yes : messages.no
-                    ),
-                  })}
-                </li>
-              </ul>
+            {/* Community Vote Warning */}
+            <div className="rounded-md border border-yellow-500/30 bg-yellow-900/20 p-3">
+              <p className="text-sm text-yellow-200">
+                <strong>Note:</strong>{' '}
+                {intl.formatMessage(messages.communityVoteWarning)}
+              </p>
             </div>
           </div>
         </Modal>

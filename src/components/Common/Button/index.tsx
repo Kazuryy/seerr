@@ -48,6 +48,8 @@ function Button<P extends ElementTypes = 'button'>(
 ): JSX.Element {
   const buttonStyle = [
     'inline-flex items-center justify-center border leading-5 font-medium rounded-md focus:outline-none transition ease-in-out duration-150 cursor-pointer disabled:opacity-50 whitespace-nowrap',
+    // Mobile tap highlight fixes
+    'tap-highlight-transparent [-webkit-tap-highlight-color:transparent] touch-manipulation select-none',
   ];
   switch (buttonType) {
     case 'primary':
