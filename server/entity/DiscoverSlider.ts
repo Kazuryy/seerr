@@ -10,6 +10,7 @@ class DiscoverSlider {
   public static async bootstrapSliders(): Promise<void> {
     const sliderRepository = getRepository(DiscoverSlider);
 
+    // Bootstrap discover sliders
     for (const slider of defaultSliders) {
       const existingSlider = await sliderRepository.findOne({
         where: {
