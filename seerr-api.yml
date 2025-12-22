@@ -5483,6 +5483,296 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Company'
+  /test/hello:
+    get:
+      summary: Test endpoint
+      description: Simple test endpoint to verify routing works correctly.
+      tags:
+        - other
+      responses:
+        '200':
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: 'Test route works!'
+                  timestamp:
+                    type: string
+                    example: '2025-12-22T08:00:00.000Z'
+  /available/movies:
+    get:
+      summary: Get available movies from library
+      description: |
+        Returns movies that are available in the user's Jellyfin/Plex library (status=5).
+        Queries the local database first, returns data without TMDB calls for maximum performance.
+      tags:
+        - media
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+          example: 1
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [movie, tv]
+            default: movie
+          description: Media type to filter
+          example: movie
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [mediaAddedAt, popularity, releaseDate, rating, title]
+            default: mediaAddedAt
+          description: Sort field
+          example: popularity
+        - in: query
+          name: genre
+          schema:
+            type: integer
+          description: Filter by TMDB genre ID (single - use genres for multiple)
+          example: 28
+        - in: query
+          name: genres
+          schema:
+            type: string
+          description: Filter by TMDB genre IDs (comma-separated)
+          example: '28,12'
+        - in: query
+          name: studio
+          schema:
+            type: integer
+          description: Filter by TMDB production company/studio ID (movies only)
+          example: 2
+        - in: query
+          name: network
+          schema:
+            type: integer
+          description: Filter by TMDB network ID (TV shows only)
+          example: 213
+        - in: query
+          name: year
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+          description: Filter by release year (legacy param)
+          example: '2024'
+        - in: query
+          name: releaseYear
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+          description: Filter by release year
+          example: '2024'
+        - in: query
+          name: originalLanguages
+          schema:
+            type: string
+          description: Filter by original languages (comma-separated ISO 639-1 codes)
+          example: 'en,fr'
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search in title
+          example: 'matrix'
+        - in: query
+          name: watchProviders
+          schema:
+            type: string
+          description: Filter by watch providers (comma-separated IDs) - ignored for available media
+          example: '8'
+        - in: query
+          name: watchRegion
+          schema:
+            type: string
+          description: Watch provider region - ignored for available media
+          example: 'US'
+        - in: query
+          name: keywords
+          schema:
+            type: string
+          description: Filter by keywords (comma-separated IDs) - ignored for available media
+          example: '1234'
+        - in: query
+          name: withRuntimeGte
+          schema:
+            type: integer
+          description: Minimum runtime in minutes - ignored for available media
+          example: 90
+        - in: query
+          name: withRuntimeLte
+          schema:
+            type: integer
+          description: Maximum runtime in minutes - ignored for available media
+          example: 180
+        - in: query
+          name: voteAverageGte
+          schema:
+            type: number
+          description: Minimum vote average - ignored for available media
+          example: 7.0
+        - in: query
+          name: voteAverageLte
+          schema:
+            type: number
+          description: Maximum vote average - ignored for available media
+          example: 10.0
+        - in: query
+          name: withCast
+          schema:
+            type: string
+          description: Filter by cast member IDs - ignored for available media
+          example: '1234'
+        - in: query
+          name: withCrew
+          schema:
+            type: string
+          description: Filter by crew member IDs - ignored for available media
+          example: '1234'
+        - in: query
+          name: language
+          schema:
+            type: string
+          description: Filter by original language - ignored for available media
+          example: 'en'
+      responses:
+        '200':
+          description: Paginated list of available movies
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - page
+                  - totalPages
+                  - totalResults
+                  - results
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 15
+                  totalResults:
+                    type: integer
+                    example: 297
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - mediaType
+                        - title
+                      properties:
+                        id:
+                          type: integer
+                          description: TMDB ID
+                          example: 603
+                        mediaType:
+                          type: string
+                          enum: [movie, tv]
+                          example: movie
+                        title:
+                          type: string
+                          example: The Matrix
+                        originalTitle:
+                          type: string
+                          example: The Matrix
+                        posterPath:
+                          type: string
+                          nullable: true
+                          example: /f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg
+                        backdropPath:
+                          type: string
+                          nullable: true
+                          example: /fNG7i7RqMErkcqhohV2a6cV1Ehy.jpg
+                        overview:
+                          type: string
+                          nullable: true
+                        releaseDate:
+                          type: string
+                          format: date
+                          nullable: true
+                          example: '1999-03-30'
+                        voteAverage:
+                          type: number
+                          format: float
+                          nullable: true
+                          example: 8.2
+                        voteCount:
+                          type: integer
+                          nullable: true
+                          example: 24821
+                        popularity:
+                          type: number
+                          format: float
+                          nullable: true
+                          example: 89.45
+                        genreIds:
+                          type: array
+                          items:
+                            type: integer
+                          example: [28, 878]
+                        adult:
+                          type: boolean
+                          example: false
+                        video:
+                          type: boolean
+                          example: false
+                        mediaInfo:
+                          type: object
+                          required:
+                            - id
+                            - status
+                          properties:
+                            id:
+                              type: integer
+                              description: Internal media ID
+                              example: 123
+                            tmdbId:
+                              type: integer
+                              example: 603
+                            tvdbId:
+                              type: integer
+                              nullable: true
+                              example: null
+                            status:
+                              type: integer
+                              description: Media status (5 = AVAILABLE)
+                              example: 5
+                            status4k:
+                              type: integer
+                              example: 1
+                            downloadStatus:
+                              type: array
+                              items:
+                                type: object
+                            mediaAddedAt:
+                              type: string
+                              format: date-time
+                              example: '2025-12-21T10:30:00.000Z'
+        '403':
+          description: Unauthorized - User not authenticated
+        '500':
+          description: Internal server error
   /discover/movies:
     get:
       summary: Discover movies
