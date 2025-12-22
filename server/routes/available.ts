@@ -10,8 +10,6 @@ const availableRoutes = Router();
 const enrichedMediaCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-logger.info('🔥 AVAILABLE ROUTES MODULE LOADED', { label: 'Available Routes' });
-
 /**
  * GET /api/v1/available/movies
  *
@@ -89,8 +87,8 @@ availableRoutes.get('/movies', async (req, res, next) => {
     // Get total count for pagination
     const totalCount = await queryBuilder.getCount();
 
-    // When filters are active (genre/studio/network), we need to fetch more items
-    // because filtering happens client-side after TMDB enrichment
+    // When filters are active (genre/studio/network) OR sorting by non-DB fields,
+    // we need to fetch more items because filtering/sorting happens client-side after TMDB enrichment
     // Limit to reasonable number (200) to balance completeness vs performance
     const hasFilters =
       genre ||
@@ -100,7 +98,8 @@ availableRoutes.get('/movies', async (req, res, next) => {
       year ||
       releaseYear ||
       search ||
-      originalLanguages;
+      originalLanguages ||
+      (sortBy && sortBy !== 'mediaAddedAt'); // Sorting requires all items except for mediaAddedAt (already in DB)
 
     let items;
     if (hasFilters) {
