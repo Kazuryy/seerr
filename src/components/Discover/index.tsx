@@ -211,6 +211,28 @@ const Discover = () => {
         let sliderComponent: React.ReactNode;
 
         switch (slider.type) {
+          case DiscoverSliderType.AVAILABLE_MOVIES:
+            sliderComponent = (
+              <MediaSlider
+                sliderKey="available-movies"
+                title={intl.formatMessage(sliderTitles.availablemovies)}
+                url="/api/v1/available/movies"
+                extraParams="sortBy=popularity"
+                linkUrl="/available/movies"
+              />
+            );
+            break;
+          case DiscoverSliderType.AVAILABLE_TV:
+            sliderComponent = (
+              <MediaSlider
+                sliderKey="available-tv"
+                title={intl.formatMessage(sliderTitles.availabletv)}
+                url="/api/v1/available/movies"
+                extraParams="type=tv&sortBy=popularity"
+                linkUrl="/available/tv"
+              />
+            );
+            break;
           case DiscoverSliderType.RECENTLY_ADDED:
             sliderComponent = <RecentlyAddedSlider />;
             break;

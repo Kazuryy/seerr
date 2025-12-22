@@ -89,6 +89,10 @@ export const sliderTitles = defineMessages('components.Discover', {
   tmdbmoviestreamingservices: 'TMDB Movie Streaming Services',
   tmdbtvstreamingservices: 'TMDB TV Streaming Services',
   votingnow: 'Leaving Soon',
+  availablemovies: 'Available Movies',
+  availabletv: 'Available TV Shows',
+  expiringsooon: 'Leaving Soon',
+  jellyfinwatchlist: 'Your Watchlist',
 });
 
 export const QueryFilterOptions = z.object({

@@ -169,6 +169,14 @@ const DiscoverSliderEdit = ({
         return intl.formatMessage(sliderTitles.tmdbmoviestreamingservices);
       case DiscoverSliderType.TMDB_TV_STREAMING_SERVICES:
         return intl.formatMessage(sliderTitles.tmdbtvstreamingservices);
+      case DiscoverSliderType.AVAILABLE_MOVIES:
+        return intl.formatMessage(sliderTitles.availablemovies);
+      case DiscoverSliderType.AVAILABLE_TV:
+        return intl.formatMessage(sliderTitles.availabletv);
+      case DiscoverSliderType.EXPIRING_SOON:
+        return intl.formatMessage(sliderTitles.votingnow);
+      case DiscoverSliderType.JELLYFIN_WATCHLIST:
+        return intl.formatMessage(sliderTitles.jellyfinwatchlist);
       default:
         return 'Unknown Slider';
     }
