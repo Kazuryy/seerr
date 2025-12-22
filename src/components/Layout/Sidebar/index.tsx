@@ -28,6 +28,7 @@ export const menuMessages = defineMessages('components.Layout.Sidebar', {
   dashboard: 'Discover',
   browsemovies: 'Movies',
   browsetv: 'Series',
+  available: 'Available',
   requests: 'Requests',
   deletionrequests: 'Removals',
   blacklist: 'Blacklist',
