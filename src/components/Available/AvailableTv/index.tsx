@@ -40,7 +40,10 @@ const AvailableTv = () => {
     titles,
     fetchMore,
     error,
-  } = useDiscover<TvResult>('/api/v1/available/movies?type=tv', router.query);
+  } = useDiscover<TvResult>('/api/v1/available/movies', {
+    ...router.query,
+    type: 'tv',
+  });
 
   if (error) {
     return <Error statusCode={500} />;
