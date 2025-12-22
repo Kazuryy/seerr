@@ -82,7 +82,7 @@ const useDiscover = <
     },
     {
       initialSize: 3,
-      revalidateFirstPage: false,
+      revalidateFirstPage: true,
     }
   );
 
