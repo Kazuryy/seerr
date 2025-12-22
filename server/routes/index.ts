@@ -161,9 +161,7 @@ router.use('/settings', isAuthenticated(Permission.ADMIN), settingsRoutes);
 router.use('/search', isAuthenticated(), searchRoutes);
 router.use('/discover', isAuthenticated(), discoverRoutes);
 router.use('/test', testRoutes); // 🧪 TEST: sans auth pour debug
-logger.info('🚀 MOUNTING /available route', { label: 'Router Setup' });
 router.use('/available', availableRoutes); // TEMP: Auth removed for debugging
-logger.info('✅ /available route MOUNTED', { label: 'Router Setup' });
 router.use('/request', isAuthenticated(), requestRoutes);
 router.use('/watchlist', isAuthenticated(), watchlistRoutes);
 router.use('/blacklist', isAuthenticated(), blacklistRoutes);
