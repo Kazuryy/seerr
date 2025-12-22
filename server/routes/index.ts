@@ -7,6 +7,7 @@ import type {
 } from '@server/api/themoviedb/interfaces';
 import { getRepository } from '@server/datasource';
 import DiscoverSlider from '@server/entity/DiscoverSlider';
+import Media from '@server/entity/Media';
 import type { StatusResponse } from '@server/interfaces/api/settingsInterfaces';
 import { Permission } from '@server/lib/permissions';
 import { getSettings } from '@server/lib/settings';
@@ -28,6 +29,7 @@ import restartFlag from '@server/utils/restartFlag';
 import { isPerson } from '@server/utils/typeHelpers';
 import { Router } from 'express';
 import authRoutes from './auth';
+import availableRoutes from './available';
 import blacklistRoutes from './blacklist';
 import collectionRoutes from './collection';
 import deletionRoutes from './deletion';
@@ -40,6 +42,7 @@ import personRoutes from './person';
 import requestRoutes from './request';
 import searchRoutes from './search';
 import serviceRoutes from './service';
+import testRoutes from './test';
 import tvRoutes from './tv';
 import user from './user';
 
@@ -122,6 +125,7 @@ router.get('/settings/discover', isAuthenticated(), async (_req, res) => {
 
   return res.json(sliders);
 });
+
 router.get(
   '/settings/notifications/pushover/sounds',
   isAuthenticated(),
@@ -147,9 +151,19 @@ router.get(
     }
   }
 );
+// 🧪 ROUTE DE TEST MINIMALISTE - DEBUG ROUTING
+router.get('/test-route', (req, res) => {
+  logger.info('✅ TEST ROUTE HIT!', { label: 'Test Route' });
+  return res.status(200).json({ success: true, message: 'Test route works!' });
+});
+
 router.use('/settings', isAuthenticated(Permission.ADMIN), settingsRoutes);
 router.use('/search', isAuthenticated(), searchRoutes);
 router.use('/discover', isAuthenticated(), discoverRoutes);
+router.use('/test', testRoutes); // 🧪 TEST: sans auth pour debug
+logger.info('🚀 MOUNTING /available route', { label: 'Router Setup' });
+router.use('/available', availableRoutes); // TEMP: Auth removed for debugging
+logger.info('✅ /available route MOUNTED', { label: 'Router Setup' });
 router.use('/request', isAuthenticated(), requestRoutes);
 router.use('/watchlist', isAuthenticated(), watchlistRoutes);
 router.use('/blacklist', isAuthenticated(), blacklistRoutes);
@@ -451,6 +465,88 @@ router.get('/', (_req, res) => {
     api: 'Seerr API',
     version: '1.0',
   });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// AVAILABLE MEDIA ENDPOINT - DB-only, ultra fast
+// ═══════════════════════════════════════════════════════════════
+
+router.get('/available-media', isAuthenticated(), async (req, res, next) => {
+  try {
+    const mediaRepository = getRepository(Media);
+
+    // Parse query params
+    const page = parseInt(req.query.page as string) || 1;
+    const mediaType = (req.query.type as string) || 'movie';
+    const sortBy = (req.query.sortBy as string) || 'mediaAddedAt';
+    const take = 20;
+    const skip = (page - 1) * take;
+
+    logger.debug('Available media request', {
+      label: 'Available Media',
+      page,
+      mediaType,
+      sortBy,
+    });
+
+    // Build order object
+    const orderField =
+      sortBy === 'mediaAddedAt'
+        ? 'mediaAddedAt'
+        : sortBy === 'createdAt'
+        ? 'createdAt'
+        : 'mediaAddedAt';
+
+    // Query DB - AVAILABLE media only (status = 5)
+    const [items, total] = await mediaRepository.findAndCount({
+      where: {
+        status: 5, // AVAILABLE
+        mediaType: mediaType as any,
+      },
+      order: {
+        [orderField]: 'DESC',
+      },
+      take,
+      skip,
+    });
+
+    logger.info(`Found ${items.length}/${total} available ${mediaType}`, {
+      label: 'Available Media',
+      page,
+    });
+
+    // Format response - minimal data from Media entity
+    const results = items.map((m) => ({
+      id: m.tmdbId,
+      mediaType: m.mediaType,
+      mediaInfo: {
+        id: m.id,
+        tmdbId: m.tmdbId,
+        tvdbId: m.tvdbId,
+        status: m.status,
+        status4k: m.status4k,
+        mediaAddedAt: m.mediaAddedAt,
+        downloadStatus: [],
+      },
+    }));
+
+    // Return paginated response
+    return res.status(200).json({
+      page,
+      totalPages: Math.ceil(total / take),
+      totalResults: total,
+      results,
+    });
+  } catch (error) {
+    logger.error('Error in /available-media', {
+      label: 'Available Media',
+      error: (error as Error).message,
+    });
+    return next({
+      status: 500,
+      message: 'Failed to load available media',
+    });
+  }
 });
 
 export default router;

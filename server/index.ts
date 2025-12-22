@@ -233,18 +233,6 @@ app
       next();
     });
 
-    // DEBUG: Log all requests to /api/v1
-    server.use('/api/v1', (req, res, next) => {
-      logger.info('🌟 REQUEST TO /api/v1', {
-        label: 'Server',
-        method: req.method,
-        path: req.path,
-        url: req.url,
-        originalUrl: req.originalUrl,
-      });
-      next();
-    });
-
     server.use('/api/v1', routes);
 
     // Do not set cookies so CDNs can cache them
