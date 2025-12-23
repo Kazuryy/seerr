@@ -261,6 +261,24 @@ class RadarrAPI extends ServarrBase<{ movieId: number }> {
     }
   };
 
+  public getCalendar = async (
+    startDate: Date,
+    endDate: Date
+  ): Promise<RadarrMovie[]> => {
+    try {
+      const response = await this.axios.get<RadarrMovie[]>('/calendar', {
+        params: {
+          start: startDate.toISOString().split('T')[0],
+          end: endDate.toISOString().split('T')[0],
+        },
+      });
+
+      return response.data;
+    } catch (e) {
+      throw new Error(`[Radarr] Failed to retrieve calendar: ${e.message}`);
+    }
+  };
+
   public clearCache = ({
     tmdbId,
     externalId,

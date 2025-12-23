@@ -357,6 +357,25 @@ class SonarrAPI extends ServarrBase<{
     }
   };
 
+  public getCalendar = async (
+    startDate: Date,
+    endDate: Date
+  ): Promise<EpisodeResult[]> => {
+    try {
+      const response = await this.axios.get<EpisodeResult[]>('/calendar', {
+        params: {
+          start: startDate.toISOString().split('T')[0],
+          end: endDate.toISOString().split('T')[0],
+          includeSeries: true,
+        },
+      });
+
+      return response.data;
+    } catch (e) {
+      throw new Error(`[Sonarr] Failed to retrieve calendar: ${e.message}`);
+    }
+  };
+
   public clearCache = ({
     tvdbId,
     externalId,

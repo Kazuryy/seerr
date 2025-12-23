@@ -358,7 +358,8 @@ export type JobId =
   | 'image-cache-cleanup'
   | 'availability-sync'
   | 'process-blacklisted-tags'
-  | 'deletion-vote-processor';
+  | 'deletion-vote-processor'
+  | 'calendar-sync';
 
 export interface AllSettings {
   clientId: string;
@@ -593,6 +594,9 @@ class Settings {
           schedule: '0 30 1 */7 * *',
         },
         'deletion-vote-processor': {
+          schedule: '0 0 * * * *',
+        },
+        'calendar-sync': {
           schedule: '0 0 * * * *',
         },
       },

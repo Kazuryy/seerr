@@ -1,5 +1,6 @@
 import { MediaServerType } from '@server/constants/server';
 import blacklistedTagsProcessor from '@server/job/blacklistedTagsProcessor';
+import { calendarSync } from '@server/job/calendarSync';
 import deletionVoteProcessor from '@server/job/deletionVoteProcessor';
 import availabilitySync from '@server/lib/availabilitySync';
 import downloadTracker from '@server/lib/downloadtracker';
@@ -270,6 +271,21 @@ export const startJobs = (): void => {
     }),
     running: () => deletionVoteProcessor.status().running,
     cancelFn: () => deletionVoteProcessor.cancel(),
+  });
+
+  // Sync calendar data from Radarr and Sonarr every hour
+  scheduledJobs.push({
+    id: 'calendar-sync',
+    name: 'Calendar Sync',
+    type: 'command',
+    interval: 'hours',
+    cronSchedule: jobs['calendar-sync'].schedule,
+    job: schedule.scheduleJob(jobs['calendar-sync'].schedule, () => {
+      logger.info('Starting scheduled job: Calendar Sync', {
+        label: 'Jobs',
+      });
+      calendarSync();
+    }),
   });
 
   logger.info('Scheduled jobs loaded', { label: 'Jobs' });

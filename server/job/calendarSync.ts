@@ -1,0 +1,87 @@
+import type CalendarCache from '@server/entity/CalendarCache';
+import {
+  clearOldCache,
+  fetchRadarrCalendar,
+  fetchSonarrCalendar,
+  saveToCache,
+} from '@server/lib/calendar';
+import logger from '@server/logger';
+
+/**
+ * Syncs calendar data from Radarr and Sonarr into the calendar cache
+ * Runs on schedule to keep upcoming releases up to date
+ */
+export const calendarSync = async (): Promise<void> => {
+  logger.info('Starting calendar sync job', { label: 'Calendar Sync' });
+
+  try {
+    const now = new Date();
+    const startDate = now;
+    const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // +14 days
+
+    logger.debug(
+      `Syncing calendar from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+      {
+        label: 'Calendar Sync',
+      }
+    );
+
+    // 1. Clear old cache (older than today)
+    const deletedCount = await clearOldCache(now);
+    logger.debug(`Cleared ${deletedCount} old calendar entries`, {
+      label: 'Calendar Sync',
+    });
+
+    // 2. Fetch from Radarr
+    const radarrItems = await fetchRadarrCalendar(startDate, endDate);
+    logger.debug(`Fetched ${radarrItems.length} items from Radarr`, {
+      label: 'Calendar Sync',
+    });
+
+    // 3. Fetch from Sonarr
+    const sonarrItems = await fetchSonarrCalendar(startDate, endDate);
+    logger.debug(`Fetched ${sonarrItems.length} items from Sonarr`, {
+      label: 'Calendar Sync',
+    });
+
+    // 4. Save all to cache
+    const allItems: CalendarCache[] = [...radarrItems, ...sonarrItems];
+    await saveToCache(allItems);
+
+    logger.info(
+      `Calendar sync complete: ${radarrItems.length} movies, ${sonarrItems.length} episodes (${allItems.length} total)`,
+      { label: 'Calendar Sync' }
+    );
+  } catch (error) {
+    logger.error('Calendar sync failed', {
+      label: 'Calendar Sync',
+      errorMessage: (error as Error).message,
+      error,
+    });
+  }
+};
+
+// For manual testing via CLI
+if (require.main === module) {
+  // Import datasource to initialize database connection
+  import('@server/datasource')
+    .then((datasource) => {
+      logger.info('Initializing database connection...');
+      return datasource.default.initialize();
+    })
+    .then(() => {
+      logger.info('Database initialized, starting manual calendar sync');
+      return calendarSync();
+    })
+    .then(() => {
+      logger.info('Manual calendar sync complete');
+      process.exit(0);
+    })
+    .catch((error) => {
+      logger.error('Manual calendar sync failed', {
+        errorMessage: (error as Error).message,
+        error,
+      });
+      process.exit(1);
+    });
+}
