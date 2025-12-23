@@ -4640,6 +4640,111 @@ paths:
       responses:
         '204':
           description: Succesfully removed media item
+  /calendar/upcoming:
+    get:
+      summary: Get upcoming calendar items
+      description: |
+        Returns upcoming movies and TV episodes from Radarr/Sonarr calendars.
+        Calendar data is cached and synced hourly from connected services.
+      tags:
+        - media
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: start
+          description: Start date (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2025-12-23'
+        - in: query
+          name: end
+          description: End date (ISO 8601 format)
+          schema:
+            type: string
+            format: date
+            example: '2025-12-30'
+        - in: query
+          name: watchlistOnly
+          description: Filter to watchlist items only
+          schema:
+            type: boolean
+            default: true
+        - in: query
+          name: type
+          description: Filter by media type
+          schema:
+            type: string
+            enum: [movie, tv, all]
+            default: all
+      responses:
+        '200':
+          description: Calendar data returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          example: '2025-12-23'
+                        items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                                example: movie
+                              tmdbId:
+                                type: number
+                                example: 438631
+                              tvdbId:
+                                type: number
+                                nullable: true
+                                example: 371572
+                              title:
+                                type: string
+                                example: Dune
+                              seasonNumber:
+                                type: number
+                                nullable: true
+                                example: 1
+                              episodeNumber:
+                                type: number
+                                nullable: true
+                                example: 5
+                              episodeTitle:
+                                type: string
+                                nullable: true
+                                example: The Long Night
+                              releaseDate:
+                                type: string
+                                format: date-time
+                                example: '2025-12-23T00:00:00.000Z'
+                              overview:
+                                type: string
+                                nullable: true
+                                example: A noble family becomes embroiled in a war...
+                              status:
+                                type: string
+                                example: released
+                              inWatchlist:
+                                type: boolean
+                                example: true
+                              countdown:
+                                type: number
+                                description: Seconds until release (0 if already released)
+                                example: 86400
+        '500':
+          description: Failed to fetch calendar data
   /watchlist:
     post:
       summary: Add media to watchlist

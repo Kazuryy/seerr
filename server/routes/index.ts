@@ -31,6 +31,7 @@ import { Router } from 'express';
 import authRoutes from './auth';
 import availableRoutes from './available';
 import blacklistRoutes from './blacklist';
+import calendarRoutes from './calendar';
 import collectionRoutes from './collection';
 import deletionRoutes from './deletion';
 import discoverRoutes, { createTmdbWithRegionLanguage } from './discover';
@@ -166,6 +167,7 @@ router.use('/request', isAuthenticated(), requestRoutes);
 router.use('/watchlist', isAuthenticated(), watchlistRoutes);
 router.use('/blacklist', isAuthenticated(), blacklistRoutes);
 router.use('/deletion', isAuthenticated(), deletionRoutes);
+router.use('/calendar', isAuthenticated(), calendarRoutes);
 
 router.use('/movie', isAuthenticated(), movieRoutes);
 router.use('/tv', isAuthenticated(), tvRoutes);
