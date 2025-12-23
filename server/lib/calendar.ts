@@ -7,32 +7,6 @@ import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
 import { LessThan } from 'typeorm';
 
-// Extended interfaces for calendar-specific data
-interface RadarrMovieCalendar extends RadarrMovie {
-  digitalRelease?: string;
-  physicalRelease?: string;
-  inCinemas?: string;
-  overview?: string;
-  status?: string;
-}
-
-interface SonarrEpisodeCalendar {
-  seriesId: number;
-  seasonNumber: number;
-  episodeNumber: number;
-  title: string;
-  airDateUtc: string;
-  overview: string;
-  hasFile: boolean;
-  monitored: boolean;
-  series?: {
-    title: string;
-    tvdbId: number;
-    tmdbId?: number;
-  };
-  tvdbId?: number;
-}
-
 /**
  * Fetches calendar data from all configured Radarr servers
  */
@@ -54,7 +28,9 @@ export async function fetchRadarrCalendar(
   for (const radarrSettings of settings.radarr) {
     try {
       const radarr = new RadarrAPI({
-        url: RadarrAPI.buildUrl(radarrSettings),
+        url: `http${radarrSettings.useSsl ? 's' : ''}://${
+          radarrSettings.hostname
+        }:${radarrSettings.port}${radarrSettings.baseUrl || ''}/api/v3`,
         apiKey: radarrSettings.apiKey,
       });
 
@@ -68,9 +44,47 @@ export async function fetchRadarrCalendar(
         }
       );
 
+      // DEBUG - Save to file
+      if (calendar.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fs = require('fs');
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const path = require('path');
+        const debugDir = path.join(__dirname, '../../debug');
+        if (!fs.existsSync(debugDir)) {
+          fs.mkdirSync(debugDir, { recursive: true });
+        }
+        fs.writeFileSync(
+          path.join(debugDir, 'radarr-response.json'),
+          JSON.stringify(calendar, null, 2)
+        );
+        logger.info('🔍 Radarr response saved to debug/radarr-response.json', {
+          label: 'Calendar Sync',
+        });
+      }
+
+      // DEBUG - Log first movie structure
+      if (calendar.length > 0) {
+        logger.debug('Sample Radarr movie structure:', {
+          label: 'Calendar Sync',
+          sample: JSON.stringify(calendar[0], null, 2).substring(0, 1000),
+        });
+      }
+
       // Transform to CalendarCache
       for (const movie of calendar) {
-        const movieData = movie as RadarrMovieCalendar;
+        const movieData = movie as RadarrMovie & {
+          images?: { coverType: string; remoteUrl: string }[];
+          digitalRelease?: string;
+          physicalRelease?: string;
+          inCinemas?: string;
+          overview?: string;
+          status?: string;
+        };
+
+        // Extract fields safely
+        const title = movieData.title || 'Unknown';
+        const tmdbId = movieData.tmdbId || 0;
 
         // Determine release date (prefer digital, then physical, then in cinemas)
         let releaseDate: Date | null = null;
@@ -83,27 +97,30 @@ export async function fetchRadarrCalendar(
         }
 
         if (!releaseDate || isNaN(releaseDate.getTime())) {
-          logger.debug(
-            `Skipping movie ${movie.title} - no valid release date`,
-            {
-              label: 'Calendar Sync',
-            }
-          );
+          logger.debug(`Skipping movie ${title} - no valid release date`, {
+            label: 'Calendar Sync',
+          });
           continue;
         }
 
         results.push(
           new CalendarCache({
             type: 'movie',
-            tmdbId: movie.tmdbId,
-            title: movie.title,
+            tmdbId: tmdbId,
+            title: title,
             releaseDate,
             overview: movieData.overview || '',
             status: movieData.status || 'announced',
-            monitored: movie.monitored,
-            hasFile: movie.hasFile,
-            radarrId: movie.id,
+            monitored: movieData.monitored || false,
+            hasFile: movieData.hasFile || false,
+            radarrId: movieData.id || 0,
             externalSource: 'radarr',
+            posterPath: movieData.images?.find(
+              (img) => img.coverType === 'poster'
+            )?.remoteUrl,
+            backdropPath: movieData.images?.find(
+              (img) => img.coverType === 'banner'
+            )?.remoteUrl,
             // TV-specific fields are undefined
             tvdbId: undefined,
             seasonNumber: undefined,
@@ -146,7 +163,9 @@ export async function fetchSonarrCalendar(
   for (const sonarrSettings of settings.sonarr) {
     try {
       const sonarr = new SonarrAPI({
-        url: SonarrAPI.buildUrl(sonarrSettings),
+        url: `http${sonarrSettings.useSsl ? 's' : ''}://${
+          sonarrSettings.hostname
+        }:${sonarrSettings.port}${sonarrSettings.baseUrl || ''}/api/v3`,
         apiKey: sonarrSettings.apiKey,
       });
 
@@ -160,9 +179,52 @@ export async function fetchSonarrCalendar(
         }
       );
 
+      // DEBUG - Save to file
+      if (calendar.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fs = require('fs');
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const path = require('path');
+        const debugDir = path.join(__dirname, '../../debug');
+        if (!fs.existsSync(debugDir)) {
+          fs.mkdirSync(debugDir, { recursive: true });
+        }
+        fs.writeFileSync(
+          path.join(debugDir, 'sonarr-response.json'),
+          JSON.stringify(calendar, null, 2)
+        );
+        logger.info('🔍 Sonarr response saved to debug/sonarr-response.json', {
+          label: 'Calendar Sync',
+        });
+      }
+
+      // DEBUG - Log first episode structure
+      if (calendar.length > 0) {
+        logger.debug('Sample Sonarr episode structure:', {
+          label: 'Calendar Sync',
+          sample: JSON.stringify(calendar[0], null, 2).substring(0, 1000),
+        });
+      }
+
       // Transform to CalendarCache
       for (const episode of calendar) {
-        const episodeData = episode as unknown as SonarrEpisodeCalendar;
+        const episodeData = episode as {
+          airDateUtc: string;
+          seasonNumber: number;
+          episodeNumber: number;
+          title: string;
+          overview?: string;
+          hasFile: boolean;
+          monitored: boolean;
+          seriesId: number;
+          tvdbId?: number;
+          series?: {
+            title: string;
+            tmdbId?: number;
+            tvdbId?: number;
+            images?: { coverType: string; remoteUrl: string }[];
+          };
+        };
 
         if (!episodeData.airDateUtc) {
           logger.debug(
@@ -214,6 +276,12 @@ export async function fetchSonarrCalendar(
             hasFile: episodeData.hasFile,
             sonarrId: episodeData.seriesId,
             externalSource: 'sonarr',
+            posterPath: series?.images?.find(
+              (img) => img.coverType === 'poster'
+            )?.remoteUrl,
+            backdropPath: series?.images?.find(
+              (img) => img.coverType === 'banner'
+            )?.remoteUrl,
             // Movie-specific fields are undefined
             radarrId: undefined,
           })

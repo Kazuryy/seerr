@@ -36,6 +36,12 @@ export class CalendarCache {
   @Column({ type: 'text', nullable: true })
   public overview?: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  public posterPath?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  public backdropPath?: string;
+
   @Column({ type: 'varchar' })
   public status: string;
 

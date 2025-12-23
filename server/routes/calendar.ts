@@ -51,7 +51,10 @@ calendarRoutes.get<never, CalendarResponse>(
       const endDate = req.query.end
         ? new Date(req.query.end as string)
         : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
-      const watchlistOnly = req.query.watchlistOnly !== 'false'; // default true
+
+      const watchlistOnly = req.query.watchlistOnly
+        ? req.query.watchlistOnly === 'true'
+        : true;
       const type = (req.query.type as string) || 'all';
 
       // 2. Fetch from cache
@@ -84,7 +87,7 @@ calendarRoutes.get<never, CalendarResponse>(
 
       // 4. Filter by watchlist if needed
       let filteredItems = cacheItems;
-      if (watchlistOnly) {
+      if (!watchlistOnly) {
         filteredItems = cacheItems.filter((item) =>
           watchlistTmdbIds.has(item.tmdbId)
         );
@@ -110,6 +113,8 @@ calendarRoutes.get<never, CalendarResponse>(
           status: item.status,
           inWatchlist,
           countdown: countdown > 0 ? countdown : 0,
+          posterPath: item.posterPath || null,
+          backdropPath: item.backdropPath || null,
         };
       });
 
