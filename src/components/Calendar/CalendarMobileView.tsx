@@ -13,6 +13,8 @@ interface CalendarItem {
   countdown: number;
   posterPath?: string;
   backdropPath?: string;
+  status: string;
+  hasFile: boolean;
 }
 
 interface CalendarDay {

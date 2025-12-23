@@ -13,6 +13,8 @@ interface CalendarItem {
   countdown: number;
   posterPath?: string;
   backdropPath?: string;
+  status: string;
+  hasFile: boolean;
 }
 
 interface CalendarDay {
@@ -22,31 +24,40 @@ interface CalendarDay {
 
 interface CalendarDayColumnProps {
   day: CalendarDay;
+  isMonthView?: boolean;
 }
 
-const CalendarDayColumn: React.FC<CalendarDayColumnProps> = ({ day }) => {
-  const date = new Date(day.date);
+const CalendarDayColumn: React.FC<CalendarDayColumnProps> = ({
+  day,
+  isMonthView = false,
+}) => {
+  // Parse date in local timezone (YYYY-MM-DD format)
+  const [year, month, dayOfMonth] = day.date.split('-').map(Number);
+  const date = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
+
   const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
   const dayNum = date.getDate();
   const monthName = date.toLocaleDateString('en-US', { month: 'short' });
   const isToday = date.toDateString() === new Date().toDateString();
 
   return (
-    <div className="flex min-w-[180px] flex-col">
-      {/* Day Header (Sonarr style) */}
+    <div className={`flex flex-col ${isMonthView ? '' : 'min-w-[180px]'}`}>
+      {/* Day Header (Compact version) */}
       <div
         className={`
-          mb-3 rounded-lg p-3 text-center font-medium transition-all
+          mb-2 rounded-md px-2 py-1.5 text-center font-medium transition-all
           ${
             isToday
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/50'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
               : 'bg-gray-800 text-gray-400'
           }
         `}
       >
-        <div className="text-xs">{dayName}</div>
-        <div className="text-2xl font-bold">{dayNum}</div>
-        <div className="text-xs opacity-75">{monthName}</div>
+        <div className="flex items-center justify-center gap-1 text-sm">
+          <span className="font-normal">{dayName}</span>
+          <span className="text-lg font-bold">{dayNum}</span>
+          <span className="font-normal opacity-75">{monthName}</span>
+        </div>
       </div>
 
       {/* Cards */}

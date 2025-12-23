@@ -273,12 +273,12 @@ export const startJobs = (): void => {
     cancelFn: () => deletionVoteProcessor.cancel(),
   });
 
-  // Sync calendar data from Radarr and Sonarr every hour
+  // Sync calendar data from Radarr and Sonarr every 15 minutes
   scheduledJobs.push({
     id: 'calendar-sync',
     name: 'Calendar Sync',
     type: 'command',
-    interval: 'hours',
+    interval: 'minutes',
     cronSchedule: jobs['calendar-sync'].schedule,
     job: schedule.scheduleJob(jobs['calendar-sync'].schedule, () => {
       logger.info('Starting scheduled job: Calendar Sync', {

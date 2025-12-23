@@ -119,7 +119,7 @@ export async function fetchRadarrCalendar(
               (img) => img.coverType === 'poster'
             )?.remoteUrl,
             backdropPath: movieData.images?.find(
-              (img) => img.coverType === 'banner'
+              (img) => img.coverType === 'fanart'
             )?.remoteUrl,
             // TV-specific fields are undefined
             tvdbId: undefined,
@@ -280,7 +280,7 @@ export async function fetchSonarrCalendar(
               (img) => img.coverType === 'poster'
             )?.remoteUrl,
             backdropPath: series?.images?.find(
-              (img) => img.coverType === 'banner'
+              (img) => img.coverType === 'fanart'
             )?.remoteUrl,
             // Movie-specific fields are undefined
             radarrId: undefined,

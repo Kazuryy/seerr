@@ -16,6 +16,8 @@ interface CalendarItem {
   countdown: number;
   posterPath?: string;
   backdropPath?: string;
+  status: string;
+  hasFile: boolean;
 }
 
 interface CalendarCardProps {
@@ -51,20 +53,29 @@ const CalendarCard: React.FC<CalendarCardProps> = ({ item }) => {
       ? `${item.seasonNumber}x${String(item.episodeNumber).padStart(2, '0')}`
       : null;
 
-  // Generate consistent color based on tmdbId (for left border)
-  const colors = [
-    'border-l-blue-500',
-    'border-l-green-500',
-    'border-l-purple-500',
-    'border-l-pink-500',
-    'border-l-yellow-500',
-    'border-l-red-500',
-    'border-l-teal-500',
-    'border-l-orange-500',
-  ];
-  const borderColor = item.inWatchlist
-    ? 'border-l-indigo-500'
-    : colors[item.tmdbId % colors.length];
+  // Determine border color based on status
+  // Status values from Radarr/Sonarr: 'released', 'announced', etc.
+  const getStatusColor = (status: string, hasFile: boolean) => {
+    // If in watchlist, use special color
+    if (item.inWatchlist) {
+      return 'border-l-yellow-500'; // Watchlist items in gold
+    }
+
+    // Status-based colors
+    if (hasFile) {
+      return 'border-l-green-500'; // Downloaded (weekly episodes)
+    } else if (status === 'released') {
+      return 'border-l-orange-500'; // Released but not downloaded yet
+    } else if (status === 'announced') {
+      return 'border-l-blue-500'; // Announced/Coming soon
+    } else if (status === 'inCinemas') {
+      return 'border-l-purple-500'; // In theaters
+    } else {
+      return 'border-l-gray-500'; // Unknown status
+    }
+  };
+
+  const borderColor = getStatusColor(item.status, item.hasFile);
 
   return (
     <Link href={url}>

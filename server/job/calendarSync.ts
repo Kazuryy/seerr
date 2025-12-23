@@ -16,15 +16,17 @@ export const calendarSync = async (): Promise<void> => {
 
   try {
     const now = new Date();
-    const startDate = now;
-    const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // +14 days
+    now.setHours(0, 0, 0, 0);
 
-    logger.debug(
-      `Syncing calendar from ${startDate.toISOString()} to ${endDate.toISOString()}`,
-      {
-        label: 'Calendar Sync',
-      }
-    );
+    // Sync from today to 90 days in the future
+    const startDate = new Date(now);
+    const endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // +90 days (3 months)
+
+    logger.info('Starting calendar sync job (90 days)', {
+      label: 'Calendar Sync',
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+    });
 
     // 1. Clear old cache (older than today)
     const deletedCount = await clearOldCache(now);

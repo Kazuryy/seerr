@@ -597,7 +597,7 @@ class Settings {
           schedule: '0 0 * * * *',
         },
         'calendar-sync': {
-          schedule: '0 0 * * * *',
+          schedule: '*/15 * * * *', // Every 15 minutes
         },
       },
       network: {

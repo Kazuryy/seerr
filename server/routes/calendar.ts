@@ -1,6 +1,10 @@
 import { getRepository } from '@server/datasource';
 import CalendarCache from '@server/entity/CalendarCache';
 import { Watchlist } from '@server/entity/Watchlist';
+import {
+  fetchRadarrCalendarDirect,
+  fetchSonarrCalendarDirect,
+} from '@server/lib/calendarDirect';
 import logger from '@server/logger';
 import { Router } from 'express';
 
@@ -17,6 +21,7 @@ interface CalendarItem {
   releaseDate: Date;
   overview?: string;
   status: string;
+  hasFile: boolean;
   inWatchlist: boolean;
   countdown: number;
 }
@@ -28,6 +33,12 @@ interface CalendarDay {
 
 interface CalendarResponse {
   results: CalendarDay[];
+  pagination?: {
+    start: string;
+    end: string;
+    source: 'database' | 'direct';
+    hasMore: boolean;
+  };
 }
 
 /**
@@ -57,22 +68,150 @@ calendarRoutes.get<never, CalendarResponse>(
         : true;
       const type = (req.query.type as string) || 'all';
 
-      // 2. Fetch from cache
-      const repository = getRepository(CalendarCache);
-      let query = repository
-        .createQueryBuilder('calendar')
-        .where('calendar.releaseDate BETWEEN :start AND :end', {
+      // 2. Determine if this is an extended range request (> 90 days from now)
+      now.setHours(0, 0, 0, 0);
+      const ninetyDaysFromNow = new Date(now);
+      ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
+
+      const isExtendedRange = startDate >= ninetyDaysFromNow;
+
+      let cacheItems: any[] = [];
+
+      if (isExtendedRange) {
+        // EXTENDED RANGE: Fetch directly from Radarr/Sonarr
+        logger.info(
+          'Extended range request - fetching directly from Radarr/Sonarr',
+          {
+            label: 'Calendar API',
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+          }
+        );
+
+        const radarrData =
+          type !== 'tv'
+            ? await fetchRadarrCalendarDirect(startDate, endDate)
+            : [];
+
+        const sonarrData =
+          type !== 'movie'
+            ? await fetchSonarrCalendarDirect(startDate, endDate)
+            : [];
+
+        // Transform to CalendarCache-like format
+        const radarrItems = radarrData
+          .map((movie: any) => {
+            const releaseDate = new Date(
+              movie.digitalRelease || movie.physicalRelease || movie.inCinemas
+            );
+            if (!releaseDate || isNaN(releaseDate.getTime())) return null;
+
+            // Determine status based on dates
+            let status = 'announced';
+            if (movie.hasFile) {
+              status = 'available';
+            } else if (movie.inCinemas) {
+              status = 'inCinemas';
+            } else if (movie.digitalRelease || movie.physicalRelease) {
+              const now = new Date();
+              if (releaseDate <= now) {
+                status = 'released';
+              }
+            }
+
+            return {
+              type: 'movie',
+              tmdbId: movie.tmdbId,
+              title: movie.title,
+              releaseDate,
+              overview: movie.overview,
+              status,
+              monitored: movie.monitored,
+              hasFile: movie.hasFile,
+              posterPath:
+                movie.images?.find((img: any) => img.coverType === 'poster')
+                  ?.remoteUrl || null,
+              backdropPath:
+                movie.images?.find((img: any) => img.coverType === 'fanart')
+                  ?.remoteUrl || null,
+            };
+          })
+          .filter(Boolean);
+
+        const sonarrItems = sonarrData
+          .map((episode: any) => {
+            if (!episode.airDateUtc) return null;
+            const releaseDate = new Date(episode.airDateUtc);
+            if (isNaN(releaseDate.getTime())) return null;
+
+            // Determine status based on dates and hasFile
+            let status = 'announced';
+            if (episode.hasFile) {
+              status = 'available';
+            } else {
+              const now = new Date();
+              if (releaseDate <= now) {
+                status = 'released';
+              }
+            }
+
+            return {
+              type: 'tv',
+              tmdbId: episode.series?.tmdbId,
+              tvdbId: episode.series?.tvdbId || episode.tvdbId,
+              title: episode.series?.title,
+              seasonNumber: episode.seasonNumber,
+              episodeNumber: episode.episodeNumber,
+              episodeTitle: episode.title,
+              releaseDate,
+              overview: episode.overview,
+              status,
+              monitored: episode.monitored,
+              hasFile: episode.hasFile,
+              posterPath:
+                episode.series?.images?.find(
+                  (img: any) => img.coverType === 'fanart'
+                )?.remoteUrl || null,
+              backdropPath:
+                episode.series?.images?.find(
+                  (img: any) => img.coverType === 'fanart'
+                )?.remoteUrl || null,
+            };
+          })
+          .filter(Boolean);
+
+        cacheItems = [...radarrItems, ...sonarrItems];
+
+        logger.debug('Fetched from Radarr/Sonarr (direct)', {
+          label: 'Calendar API',
+          radarr: radarrItems.length,
+          sonarr: sonarrItems.length,
+        });
+      } else {
+        // NORMAL RANGE: Use DB cache
+        const repository = getRepository(CalendarCache);
+        let query = repository
+          .createQueryBuilder('calendar')
+          .where('calendar.releaseDate BETWEEN :start AND :end', {
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+          })
+          .orderBy('calendar.releaseDate', 'ASC');
+
+        // Filter by type if specified
+        if (type !== 'all') {
+          query = query.andWhere('calendar.type = :type', { type });
+        }
+
+        cacheItems = await query.getMany();
+
+        logger.debug('Fetched from cache', {
+          label: 'Calendar API',
+          count: cacheItems.length,
           start: startDate.toISOString(),
           end: endDate.toISOString(),
-        })
-        .orderBy('calendar.releaseDate', 'ASC');
-
-      // Filter by type if specified
-      if (type !== 'all') {
-        query = query.andWhere('calendar.type = :type', { type });
+        });
       }
-
-      const cacheItems = await query.getMany();
 
       // 3. Get user's watchlist (Seerr watchlist only)
       let watchlistTmdbIds: Set<number> = new Set();
@@ -111,6 +250,7 @@ calendarRoutes.get<never, CalendarResponse>(
           releaseDate: item.releaseDate,
           overview: item.overview,
           status: item.status,
+          hasFile: item.hasFile,
           inWatchlist,
           countdown: countdown > 0 ? countdown : 0,
           posterPath: item.posterPath || null,
@@ -145,9 +285,18 @@ calendarRoutes.get<never, CalendarResponse>(
         watchlistOnly,
         type,
         resultCount: filteredItems.length,
+        source: isExtendedRange ? 'direct' : 'database',
       });
 
-      return res.status(200).json({ results });
+      return res.status(200).json({
+        results,
+        pagination: {
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          source: isExtendedRange ? 'direct' : 'database',
+          hasMore: true,
+        },
+      });
     } catch (error) {
       logger.error('Failed to fetch calendar upcoming', {
         label: 'Calendar API',
