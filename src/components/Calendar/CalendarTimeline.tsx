@@ -33,9 +33,13 @@ const CalendarTimeline: React.FC<CalendarTimelineProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to today's date on mount and when data changes
+  // Auto-scroll to today's date on mount and when data changes (mobile only)
   useEffect(() => {
     if (!scrollContainerRef.current || data.length === 0) return;
+
+    // Check if mobile (screen width < 768px)
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) return;
 
     const today = new Date();
     const y = today.getFullYear();
