@@ -90,6 +90,7 @@ const messages: { [messageName: string]: MessageDescriptor } = defineMessages(
     'image-cache-cleanup': 'Image Cache Cleanup',
     'process-blacklisted-tags': 'Process Blacklisted Tags',
     'deletion-vote-processor': 'Deletion Vote Processor',
+    'calendar-sync': 'Calendar Sync',
     editJobSchedule: 'Modify Job',
     jobScheduleEditSaved: 'Job edited successfully!',
     jobScheduleEditFailed: 'Something went wrong while saving the job.',

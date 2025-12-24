@@ -932,6 +932,7 @@
   "components.Settings.SettingsJobsCache.plex-refresh-token": "Plex Refresh Token",
   "components.Settings.SettingsJobsCache.plex-watchlist-sync": "Plex Watchlist Sync",
   "components.Settings.SettingsJobsCache.process": "Process",
+  "components.Settings.SettingsJobsCache.calendar-sync": "Calendar Sync",
   "components.Settings.SettingsJobsCache.process-blacklisted-tags": "Process Blacklisted Tags",
   "components.Settings.SettingsJobsCache.radarr-scan": "Radarr Scan",
   "components.Settings.SettingsJobsCache.runnow": "Run Now",
