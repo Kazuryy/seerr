@@ -30,6 +30,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Prepare version
+        id: version
+        run: |
+          # Remove -kazury suffix from version for Docker tags
+          CLEAN_VERSION="${{ github.ref_name }}"
+          CLEAN_VERSION="${CLEAN_VERSION%-kazury}"
+          echo "CLEAN_VERSION=$CLEAN_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Commit timestamp
         id: ts
         run: echo "TIMESTAMP=$(git log -1 --pretty=%ct)" >> "$GITHUB_OUTPUT"
@@ -61,8 +69,8 @@ jobs:
             ${{ env.DOCKER_HUB }}
             ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=${{ env.VERSION }}
-            type=raw,value=latest,enable=${{ !contains(env.VERSION, '-') }}
+            type=raw,value=${{ steps.version.outputs.CLEAN_VERSION }}
+            type=raw,value=latest,enable=${{ !contains(steps.version.outputs.CLEAN_VERSION, '-') }}
           labels: |
             org.opencontainers.image.created=${{ steps.ts.outputs.TIMESTAMP }}
 
@@ -87,12 +95,13 @@ jobs:
         run: |
           echo "### 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** \`${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Git Tag:** \`${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Version:** \`${{ steps.version.outputs.CLEAN_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Images pushed to:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Docker Hub: \`${{ env.DOCKER_HUB }}:${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- GHCR: \`ghcr.io/${{ github.repository }}:${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ env.VERSION }}" != *"-"* ]]; then
+          echo "- Docker Hub: \`${{ env.DOCKER_HUB }}:${{ steps.version.outputs.CLEAN_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- GHCR: \`ghcr.io/${{ github.repository }}:${{ steps.version.outputs.CLEAN_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.version.outputs.CLEAN_VERSION }}" != *"-"* ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Also tagged as:**" >> $GITHUB_STEP_SUMMARY
             echo "- \`:latest\` (stable release)" >> $GITHUB_STEP_SUMMARY
