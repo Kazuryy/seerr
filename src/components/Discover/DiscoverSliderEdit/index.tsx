@@ -177,6 +177,8 @@ const DiscoverSliderEdit = ({
         return intl.formatMessage(sliderTitles.votingnow);
       case DiscoverSliderType.JELLYFIN_WATCHLIST:
         return intl.formatMessage(sliderTitles.jellyfinwatchlist);
+      case DiscoverSliderType.TODAYS_RELEASES:
+        return intl.formatMessage(sliderTitles.todaysreleases);
       default:
         return 'Unknown Slider';
     }

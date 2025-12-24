@@ -13,6 +13,7 @@ import PlexWatchlistSlider from '@app/components/Discover/PlexWatchlistSlider';
 import RecentlyAddedSlider from '@app/components/Discover/RecentlyAddedSlider';
 import RecentRequestsSlider from '@app/components/Discover/RecentRequestsSlider';
 import StudioSlider from '@app/components/Discover/StudioSlider';
+import TodaysReleasesSlider from '@app/components/Discover/TodaysReleasesSlider';
 import TvGenreSlider from '@app/components/Discover/TvGenreSlider';
 import MediaSlider from '@app/components/MediaSlider';
 import { encodeURIExtraParams } from '@app/hooks/useDiscover';
@@ -244,6 +245,9 @@ const Discover = () => {
             break;
           case DiscoverSliderType.PLEX_WATCHLIST:
             sliderComponent = <PlexWatchlistSlider />;
+            break;
+          case DiscoverSliderType.TODAYS_RELEASES:
+            sliderComponent = <TodaysReleasesSlider />;
             break;
           case DiscoverSliderType.TRENDING:
             sliderComponent = (

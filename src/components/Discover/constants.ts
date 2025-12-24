@@ -93,6 +93,7 @@ export const sliderTitles = defineMessages('components.Discover', {
   availabletv: 'Available TV Shows',
   expiringsooon: 'Leaving Soon',
   jellyfinwatchlist: 'Your Watchlist',
+  todaysreleases: "Today's Releases",
 });
 
 export const QueryFilterOptions = z.object({
