@@ -1,8 +1,28 @@
+import type { RadarrMovie } from '@server/api/servarr/radarr';
 import RadarrAPI from '@server/api/servarr/radarr';
 import SonarrAPI from '@server/api/servarr/sonarr';
 import { calendarExtendedCache } from '@server/lib/calendarExtendedCache';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
+
+export interface SonarrEpisode {
+  seriesId: number;
+  episodeFileId: number;
+  seasonNumber: number;
+  episodeNumber: number;
+  title: string;
+  airDate: string;
+  airDateUtc: string;
+  overview: string;
+  hasFile: boolean;
+  monitored: boolean;
+  id: number;
+  series?: {
+    title: string;
+    tvdbId?: number;
+    images?: { coverType: string; url: string }[];
+  };
+}
 
 /**
  * Fetch calendar directly from Radarr (bypassing DB)
@@ -11,11 +31,11 @@ import logger from '@server/logger';
 export const fetchRadarrCalendarDirect = async (
   start: Date,
   end: Date
-): Promise<any[]> => {
+): Promise<RadarrMovie[]> => {
   // Check extended cache first
   const cached = calendarExtendedCache.get(start, end, 'radarr');
   if (cached) {
-    return cached;
+    return cached as RadarrMovie[];
   }
 
   const settings = getSettings();
@@ -28,7 +48,7 @@ export const fetchRadarrCalendarDirect = async (
     return [];
   }
 
-  const allMovies: any[] = [];
+  const allMovies: RadarrMovie[] = [];
 
   for (const server of radarrSettings) {
     try {
@@ -79,11 +99,11 @@ export const fetchRadarrCalendarDirect = async (
 export const fetchSonarrCalendarDirect = async (
   start: Date,
   end: Date
-): Promise<any[]> => {
+): Promise<SonarrEpisode[]> => {
   // Check extended cache first
   const cached = calendarExtendedCache.get(start, end, 'sonarr');
   if (cached) {
-    return cached;
+    return cached as SonarrEpisode[];
   }
 
   const settings = getSettings();
@@ -96,7 +116,7 @@ export const fetchSonarrCalendarDirect = async (
     return [];
   }
 
-  const allEpisodes: any[] = [];
+  const allEpisodes: SonarrEpisode[] = [];
 
   for (const server of sonarrSettings) {
     try {

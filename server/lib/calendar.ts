@@ -89,11 +89,11 @@ export async function fetchRadarrCalendar(
         // Determine release date (prefer digital, then physical, then in cinemas)
         let releaseDate: Date | null = null;
         if (movieData.digitalRelease) {
-          releaseDate = new Date(movieData.digitalRelease);
+          releaseDate = new Date(movieData.digitalRelease + 'T00:00:00.000Z');
         } else if (movieData.physicalRelease) {
-          releaseDate = new Date(movieData.physicalRelease);
+          releaseDate = new Date(movieData.physicalRelease + 'T00:00:00.000Z');
         } else if (movieData.inCinemas) {
-          releaseDate = new Date(movieData.inCinemas);
+          releaseDate = new Date(movieData.inCinemas + 'T00:00:00.000Z');
         }
 
         if (!releaseDate || isNaN(releaseDate.getTime())) {
@@ -209,6 +209,7 @@ export async function fetchSonarrCalendar(
       // Transform to CalendarCache
       for (const episode of calendar) {
         const episodeData = episode as {
+          airDate?: string;
           airDateUtc: string;
           seasonNumber: number;
           episodeNumber: number;
@@ -226,7 +227,9 @@ export async function fetchSonarrCalendar(
           };
         };
 
-        if (!episodeData.airDateUtc) {
+        // Use airDate (local date like "2025-12-23") instead of airDateUtc
+        // to match the calendar view which shows releases by local date
+        if (!episodeData.airDate) {
           logger.debug(
             `Skipping episode S${episodeData.seasonNumber}E${episodeData.episodeNumber} - no air date`,
             {
@@ -236,6 +239,7 @@ export async function fetchSonarrCalendar(
           continue;
         }
 
+        // Use airDateUtc which includes the real broadcast time
         const releaseDate = new Date(episodeData.airDateUtc);
         if (isNaN(releaseDate.getTime())) {
           continue;

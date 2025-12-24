@@ -1,7 +1,7 @@
 import logger from '@server/logger';
 
 interface ExtendedCacheEntry {
-  data: any[];
+  data: unknown[];
   timestamp: Date;
   ttl: number;
 }
@@ -16,7 +16,7 @@ class CalendarExtendedCache {
     return `${source}_${startStr}_${endStr}`;
   }
 
-  get(start: Date, end: Date, source: 'radarr' | 'sonarr'): any[] | null {
+  get(start: Date, end: Date, source: 'radarr' | 'sonarr'): unknown[] | null {
     const key = this.getCacheKey(start, end, source);
     const entry = this.cache.get(key);
 
@@ -39,7 +39,12 @@ class CalendarExtendedCache {
     return entry.data;
   }
 
-  set(start: Date, end: Date, source: 'radarr' | 'sonarr', data: any[]): void {
+  set(
+    start: Date,
+    end: Date,
+    source: 'radarr' | 'sonarr',
+    data: unknown[]
+  ): void {
     const key = this.getCacheKey(start, end, source);
     this.cache.set(key, {
       data,
