@@ -45,7 +45,7 @@ export async function fetchRadarrCalendar(
       );
 
       // DEBUG - Save to file
-      if (calendar.length > 0) {
+      if (process.env.NODE_ENV !== 'production' && calendar.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const fs = require('fs');
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -180,7 +180,7 @@ export async function fetchSonarrCalendar(
       );
 
       // DEBUG - Save to file
-      if (calendar.length > 0) {
+      if (process.env.NODE_ENV !== 'production' && calendar.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const fs = require('fs');
         // eslint-disable-next-line @typescript-eslint/no-var-requires
