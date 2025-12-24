@@ -265,7 +265,11 @@ class DiscordAgent
     const userMentions: string[] = [];
 
     try {
-      if (settings.options.enableMentions) {
+      // Skip user mentions for deletion voting notifications (only use role mentions)
+      if (
+        settings.options.enableMentions &&
+        type !== Notification.MEDIA_DELETION_VOTING
+      ) {
         if (payload.notifyUser) {
           if (
             payload.notifyUser.settings?.hasNotificationType(
