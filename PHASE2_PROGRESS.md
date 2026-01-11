@@ -77,38 +77,51 @@ Created interactive components for tracking functionality:
 
 ---
 
-## Next Steps
+### ✅ Step 3: Integration into Detail Pages (Commit: 13af5d85)
 
-### 🔄 Step 3: Integration into Existing Pages
+Integrated tracking buttons into media detail pages:
 
-Integrate the tracking buttons into Seerr's existing UI:
+**Completed Integration:**
 
-**Priority Integration Points:**
+1. **Movie Detail Page** (`MovieDetails/index.tsx`)
 
-1. **Movie/TV Detail Pages**
+   - ✅ Added MarkAsWatchedButton in media-actions
+   - ✅ Added ReviewButton in media-actions
+   - ✅ Positioned after watchlist, before PlayButton
+   - ✅ Auto-revalidates on update
+   - ✅ Passes mediaInfo.id and title
 
-   - Add MarkAsWatchedButton to action buttons row
-   - Add ReviewButton next to request button
-   - Show watch count and rating stats
+2. **TV Detail Page** (`TvDetails/index.tsx`)
+   - ✅ Added MarkAsWatchedButton in media-actions
+   - ✅ Added ReviewButton in media-actions
+   - ✅ Positioned after watchlist, before PlayButton
+   - ✅ Auto-revalidates on update
+   - ✅ Passes mediaInfo.id and name
 
-2. **TitleCard Component**
+**UI Integration:**
+The buttons appear in the action row alongside:
 
-   - Add tracking buttons to card hover overlay
-   - Display watched badge on watched items
-   - Show user's rating on reviewed items
+- Blacklist button (if enabled)
+- Watchlist star button
+- **→ Mark as Watched button (NEW)**
+- **→ Review button (NEW)**
+- Play button
+- Request button
+- Deletion request button
 
-3. **MediaSlider Component**
-   - Optional: Quick watch button on hover
-   - Show watched indicator
+**Files Modified:**
 
-**Files to Modify:**
+- `src/components/MovieDetails/index.tsx` ✅
+- `src/components/TvDetails/index.tsx` ✅
 
-- `src/components/MovieDetails/index.tsx`
-- `src/components/TvDetails/index.tsx`
-- `src/components/TitleCard/index.tsx`
-- `src/components/MediaSlider/index.tsx` (optional)
+**Optional Future Enhancements:**
+
+- TitleCard hover overlay buttons (nice-to-have)
+- MediaSlider watched indicators (nice-to-have)
 
 ---
+
+## Next Steps
 
 ### 🔄 Step 4: Dedicated Tracking Pages
 
@@ -216,34 +229,47 @@ Final touches and testing:
 
 - Hooks: ~350 lines
 - Components: ~485 lines
+- Integration: ~40 lines
 - Documentation: ~604 lines
-- **Total: ~1,440 lines**
+- **Total: ~1,480 lines**
 
-**Files Created:**
+**Files Created/Modified:**
 
 - Hooks: 7 files
 - Components: 5 files
+- Integration: 2 files modified
 - Documentation: 2 files
-- **Total: 14 files**
+- **Total: 14 created, 2 modified**
 
 **Commits:**
 
-- Phase 2 Step 1: a74c270b
-- Phase 2 Step 2: 18849818
+- Phase 2 Step 1: a74c270b (SWR Hooks)
+- Phase 2 Step 2: 18849818 (UI Components)
+- Phase 2 Step 3: 13af5d85 (Detail Page Integration)
 
 ---
 
 ## Current Status
 
-**Phase 2 Progress: 40% Complete (2/5 steps)**
+**Phase 2 Progress: 60% Complete (3/5 steps)**
 
 ✅ Foundation complete - Hooks ready for use
 ✅ Basic UI components complete
-🔄 Integration pending - Need to add to existing pages
+✅ Detail page integration complete - Buttons on Movie/TV pages
 🔄 Dedicated pages pending - Activity & community features
 🔄 Polish & testing pending
 
-**Next Action:** Integrate MarkAsWatchedButton and ReviewButton into Movie/TV detail pages.
+**MVP Status:** Feature is functional and usable!
+
+- Users can mark movies/shows as watched ✅
+- Users can write and edit reviews ✅
+- Data persists and syncs properly ✅
+
+**Next Action:**
+
+- **Option A:** Create dedicated tracking pages (/user/[id]/activity, /reviews)
+- **Option B:** Skip to polish & testing for MVP release
+- **Option C:** Test the feature in development mode first
 
 ---
 
