@@ -44,6 +44,7 @@ import requestRoutes from './request';
 import searchRoutes from './search';
 import serviceRoutes from './service';
 import testRoutes from './test';
+import trackingRoutes from './tracking';
 import tvRoutes from './tv';
 import user from './user';
 
@@ -167,6 +168,7 @@ router.use('/request', isAuthenticated(), requestRoutes);
 router.use('/watchlist', isAuthenticated(), watchlistRoutes);
 router.use('/blacklist', isAuthenticated(), blacklistRoutes);
 router.use('/deletion', isAuthenticated(), deletionRoutes);
+router.use('/tracking', isAuthenticated(), trackingRoutes);
 router.use('/calendar', isAuthenticated(), calendarRoutes);
 
 router.use('/movie', isAuthenticated(), movieRoutes);
