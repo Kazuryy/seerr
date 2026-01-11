@@ -5165,7 +5165,7 @@ paths:
                   type: number
                 mediaType:
                   type: string
-                  enum: [MOVIE, TV]
+                  enum: [movie, tv]
                 seasonNumber:
                   type: number
                   nullable: true
@@ -5207,7 +5207,7 @@ paths:
           name: mediaType
           schema:
             type: string
-            enum: [MOVIE, TV]
+            enum: [movie, tv]
       responses:
         '200':
           description: Watch history returned
@@ -5269,7 +5269,7 @@ paths:
           name: watchId
           required: true
           schema:
-            type: number
+            type: integer
       responses:
         '204':
           description: Watch history entry deleted
@@ -5300,7 +5300,7 @@ paths:
                   type: number
                 mediaType:
                   type: string
-                  enum: [MOVIE, TV]
+                  enum: [movie, tv]
                 seasonNumber:
                   type: number
                   nullable: true
@@ -5425,7 +5425,7 @@ paths:
           name: reviewId
           required: true
           schema:
-            type: number
+            type: integer
       responses:
         '204':
           description: Review deleted

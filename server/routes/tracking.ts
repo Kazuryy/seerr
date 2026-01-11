@@ -15,7 +15,7 @@ const trackingRoutes = Router();
 // Zod schemas for validation
 const markAsWatchedSchema = z.object({
   mediaId: z.number().int().positive(),
-  mediaType: z.enum(['MOVIE', 'TV']),
+  mediaType: z.enum(['movie', 'tv']),
   seasonNumber: z.number().int().positive().optional(),
   episodeNumber: z.number().int().positive().optional(),
   watchedAt: z.string().datetime().optional(),
@@ -23,7 +23,7 @@ const markAsWatchedSchema = z.object({
 
 const createReviewSchema = z.object({
   mediaId: z.number().int().positive(),
-  mediaType: z.enum(['MOVIE', 'TV']),
+  mediaType: z.enum(['movie', 'tv']),
   seasonNumber: z.number().int().positive().optional(),
   rating: z.number().int().min(1).max(10).optional(),
   content: z.string().max(5000).optional(),
@@ -35,7 +35,7 @@ const createReviewSchema = z.object({
 const getWatchHistorySchema = z.object({
   take: z.coerce.number().int().positive().max(100).default(20),
   skip: z.coerce.number().int().nonnegative().default(0),
-  mediaType: z.enum(['MOVIE', 'TV']).optional(),
+  mediaType: z.enum(['movie', 'tv']).optional(),
 });
 
 const getReviewsSchema = z.object({
