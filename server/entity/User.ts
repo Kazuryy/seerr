@@ -26,9 +26,11 @@ import {
 } from 'typeorm';
 import Issue from './Issue';
 import { MediaRequest } from './MediaRequest';
+import { MediaReview } from './MediaReview';
 import SeasonRequest from './SeasonRequest';
 import { UserPushSubscription } from './UserPushSubscription';
 import { UserSettings } from './UserSettings';
+import { WatchHistory } from './WatchHistory';
 
 @Entity()
 export class User {
@@ -136,6 +138,12 @@ export class User {
 
   @OneToMany(() => Issue, (issue) => issue.createdBy, { cascade: true })
   public createdIssues: Issue[];
+
+  @OneToMany(() => WatchHistory, (watch) => watch.user)
+  public watchHistory: WatchHistory[];
+
+  @OneToMany(() => MediaReview, (review) => review.user)
+  public reviews: MediaReview[];
 
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;

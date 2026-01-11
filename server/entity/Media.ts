@@ -23,7 +23,9 @@ import {
 } from 'typeorm';
 import Issue from './Issue';
 import { MediaRequest } from './MediaRequest';
+import { MediaReview } from './MediaReview';
 import Season from './Season';
+import { WatchHistory } from './WatchHistory';
 
 @Entity()
 class Media {
@@ -125,6 +127,12 @@ class Media {
 
   @OneToOne(() => Blacklist, (blacklist) => blacklist.media)
   public blacklist: Promise<Blacklist>;
+
+  @OneToMany(() => WatchHistory, (watch) => watch.media)
+  public watchHistory: WatchHistory[];
+
+  @OneToMany(() => MediaReview, (review) => review.media)
+  public reviews: MediaReview[];
 
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;
