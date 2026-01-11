@@ -25,6 +25,10 @@ import RequestButton from '@app/components/RequestButton';
 import RequestModal from '@app/components/RequestModal';
 import Slider from '@app/components/Slider';
 import StatusBadge from '@app/components/StatusBadge';
+import {
+  MarkAsWatchedButton,
+  ReviewButton,
+} from '@app/components/TrackingButtons';
 import Season from '@app/components/TvDetails/Season';
 import useDeepLinks from '@app/hooks/useDeepLinks';
 import { MediaType as DeletionMediaType } from '@app/hooks/useDeletionRequests';
@@ -658,6 +662,18 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                 )}
               </>
             )}
+          <MarkAsWatchedButton
+            mediaId={data.mediaInfo?.id ?? 0}
+            mediaType="tv"
+            title={data.name}
+            onUpdate={() => revalidate()}
+          />
+          <ReviewButton
+            mediaId={data.mediaInfo?.id ?? 0}
+            mediaType="tv"
+            title={data.name}
+            onUpdate={() => revalidate()}
+          />
           <div className="z-20">
             <PlayButton links={mediaLinks} />
           </div>

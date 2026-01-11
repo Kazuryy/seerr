@@ -23,6 +23,10 @@ import PersonCard from '@app/components/PersonCard';
 import RequestButton from '@app/components/RequestButton';
 import Slider from '@app/components/Slider';
 import StatusBadge from '@app/components/StatusBadge';
+import {
+  MarkAsWatchedButton,
+  ReviewButton,
+} from '@app/components/TrackingButtons';
 import useDeepLinks from '@app/hooks/useDeepLinks';
 import { MediaType as DeletionMediaType } from '@app/hooks/useDeletionRequests';
 import useLocale from '@app/hooks/useLocale';
@@ -616,6 +620,18 @@ const MovieDetails = ({ movie }: MovieDetailsProps) => {
                 )}
               </>
             )}
+          <MarkAsWatchedButton
+            mediaId={data.mediaInfo?.id ?? 0}
+            mediaType="movie"
+            title={data.title}
+            onUpdate={() => revalidate()}
+          />
+          <ReviewButton
+            mediaId={data.mediaInfo?.id ?? 0}
+            mediaType="movie"
+            title={data.title}
+            onUpdate={() => revalidate()}
+          />
           <div className="z-20">
             <PlayButton links={mediaLinks} />
           </div>
