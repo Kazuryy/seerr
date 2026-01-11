@@ -16,6 +16,16 @@
 
 This is a custom fork of [Seerr](https://github.com/seerr-team/seerr) (formerly Jellyseerr) that adds a **community-driven deletion voting system**. Users can democratically vote to remove media from your library based on configurable thresholds.
 
+> [!IMPORTANT] > **Seerr is not officially released yet.**
+> The upstream project is currently available **only on the `develop` branch** and is intended for **beta testing only**.
+
+> [!WARNING]
+> If you are migrating from **Overseerr** to **Seerr** for beta testing, **do not follow the Jellyseerr latest setup guide**.
+> Follow the dedicated migration guide: https://github.com/seerr-team/seerr/blob/develop/docs/migration-guide.mdx
+
+> [!CAUTION] > **DO NOT run Jellyseerr (latest) using an existing Overseerr database.**
+> Doing so **may cause database corruption and/or irreversible data loss**.
+
 ### 🆕 Custom Features (v1.0.0-kazury)
 
 #### 🗳️ Community Deletion Voting System
