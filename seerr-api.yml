@@ -42,6 +42,8 @@ tags:
     description: Blacklisted media from discovery page.
   - name: deletion
     description: Endpoints related to media deletion voting and management.
+  - name: tracking
+    description: Endpoints related to media tracking, watch history, and reviews.
 servers:
   - url: '{server}/api/v1'
     variables:
@@ -5140,6 +5142,354 @@ paths:
           description: Unauthorized to cancel
         '404':
           description: Deletion request not found
+  /tracking/watch:
+    post:
+      summary: Mark media as watched
+      description: Creates a watch history entry for the authenticated user
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mediaId
+                - mediaType
+              properties:
+                mediaId:
+                  type: number
+                mediaType:
+                  type: string
+                  enum: [MOVIE, TV]
+                seasonNumber:
+                  type: number
+                  nullable: true
+                episodeNumber:
+                  type: number
+                  nullable: true
+                watchedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '201':
+          description: Watch history entry created
+        '400':
+          description: Invalid request body
+        '404':
+          description: Media not found
+    get:
+      summary: Get user's watch history
+      description: Returns paginated watch history for the authenticated user
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: query
+          name: take
+          schema:
+            type: number
+            default: 20
+            maximum: 100
+        - in: query
+          name: skip
+          schema:
+            type: number
+            default: 0
+        - in: query
+          name: mediaType
+          schema:
+            type: string
+            enum: [MOVIE, TV]
+      responses:
+        '200':
+          description: Watch history returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pageInfo:
+                    type: object
+                    properties:
+                      pages:
+                        type: number
+                      pageSize:
+                        type: number
+                      results:
+                        type: number
+                      page:
+                        type: number
+                  results:
+                    type: array
+                    items:
+                      type: object
+  /tracking/watch/{mediaId}:
+    get:
+      summary: Get watch history for specific media
+      description: Returns all watch entries for a specific media
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: mediaId
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Watch history for media returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+  /tracking/watch/{watchId}:
+    delete:
+      summary: Delete watch history entry
+      description: Deletes a watch history entry (user can only delete their own)
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: watchId
+          required: true
+          schema:
+            type: number
+      responses:
+        '204':
+          description: Watch history entry deleted
+        '403':
+          description: Unauthorized to delete this entry
+        '404':
+          description: Watch history entry not found
+  /tracking/reviews:
+    post:
+      summary: Create or update a review
+      description: Creates or updates a review for media (upsert)
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mediaId
+                - mediaType
+              properties:
+                mediaId:
+                  type: number
+                mediaType:
+                  type: string
+                  enum: [MOVIE, TV]
+                seasonNumber:
+                  type: number
+                  nullable: true
+                rating:
+                  type: number
+                  minimum: 1
+                  maximum: 10
+                  nullable: true
+                content:
+                  type: string
+                  maxLength: 5000
+                  nullable: true
+                containsSpoilers:
+                  type: boolean
+                  default: false
+                isPublic:
+                  type: boolean
+                  default: true
+                watchedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '200':
+          description: Review updated
+        '201':
+          description: Review created
+        '400':
+          description: Invalid request body
+        '404':
+          description: Media not found
+    get:
+      summary: Get reviews with filters
+      description: Returns paginated reviews with optional filters
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: query
+          name: take
+          schema:
+            type: number
+            default: 20
+            maximum: 100
+        - in: query
+          name: skip
+          schema:
+            type: number
+            default: 0
+        - in: query
+          name: mediaId
+          schema:
+            type: number
+        - in: query
+          name: userId
+          schema:
+            type: number
+        - in: query
+          name: isPublic
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Reviews returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pageInfo:
+                    type: object
+                    properties:
+                      pages:
+                        type: number
+                      pageSize:
+                        type: number
+                      results:
+                        type: number
+                      page:
+                        type: number
+                  results:
+                    type: array
+                    items:
+                      type: object
+  /tracking/reviews/{mediaId}/me:
+    get:
+      summary: Get current user's review for media
+      description: Returns the authenticated user's review for specific media
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: mediaId
+          required: true
+          schema:
+            type: number
+        - in: query
+          name: seasonNumber
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Review returned
+        '404':
+          description: Review not found
+  /tracking/reviews/{reviewId}:
+    delete:
+      summary: Delete a review
+      description: Deletes a review (user can only delete their own)
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: number
+      responses:
+        '204':
+          description: Review deleted
+        '403':
+          description: Unauthorized to delete this review
+        '404':
+          description: Review not found
+  /tracking/stats/{userId}:
+    get:
+      summary: Get user statistics
+      description: Returns watch and review statistics for a user
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: User statistics returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: number
+                  watchStats:
+                    type: object
+                    properties:
+                      totalWatches:
+                        type: number
+                      movieWatches:
+                        type: number
+                      tvWatches:
+                        type: number
+                      episodeWatches:
+                        type: number
+                  reviewStats:
+                    type: object
+                    properties:
+                      totalReviews:
+                        type: number
+                      publicReviews:
+                        type: number
+                      privateReviews:
+                        type: number
+                      averageRating:
+                        type: number
+                        nullable: true
+                      ratingDistribution:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            rating:
+                              type: number
+                            count:
+                              type: number
   /user/{userId}/settings/main:
     get:
       summary: Get general settings for a user
