@@ -6,6 +6,8 @@
 export { useBatchMarkAsWatched } from './useBatchMarkAsWatched';
 export { useCreateReview } from './useCreateReview';
 export { useMarkAsWatched } from './useMarkAsWatched';
+export { useMediaActivity } from './useMediaActivity';
+export type { MediaActivity } from './useMediaActivity';
 export { useMyReview, useReviews } from './useReviews';
 export type { Review, ReviewsResponse } from './useReviews';
 export { useTopRated } from './useTopRated';

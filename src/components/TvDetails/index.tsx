@@ -20,6 +20,7 @@ import IssueModal from '@app/components/IssueModal';
 import ManageSlideOver from '@app/components/ManageSlideOver';
 import DeletionRequestButton from '@app/components/Media/DeletionRequestButton';
 import CommunitySection from '@app/components/MediaDetails/CommunitySection';
+import MediaActivitySection from '@app/components/MediaDetails/MediaActivitySection';
 import MediaSlider from '@app/components/MediaSlider';
 import PersonCard from '@app/components/PersonCard';
 import RequestButton from '@app/components/RequestButton';
@@ -1366,6 +1367,7 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
           {data.mediaInfo?.id && (
             <CommunitySection mediaId={data.mediaInfo.id} mediaType="tv" />
           )}
+          <MediaActivitySection tmdbId={data.id} mediaType="tv" />
         </div>
       </div>
       {data.credits.cast.length > 0 && (

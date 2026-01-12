@@ -747,6 +747,131 @@ trackingRoutes.get('/top-rated', isAuthenticated(), async (req, res, next) => {
 });
 
 /**
+ * GET /api/v1/tracking/media/:mediaId/activity
+ * Get user's activity for a specific media item
+ */
+trackingRoutes.get<{ mediaId: string }>(
+  '/media/:mediaId/activity',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const mediaId = Number(req.params.mediaId);
+      const mediaType = req.query.mediaType as MediaType;
+      const user = req.user as User;
+
+      if (!mediaType || !['movie', 'tv'].includes(mediaType)) {
+        return next({
+          status: 400,
+          message: 'Invalid or missing mediaType parameter.',
+        });
+      }
+
+      // Get the Media entity
+      const mediaRepository = getRepository(Media);
+      const media = await mediaRepository.findOne({
+        where: {
+          tmdbId: mediaId,
+          mediaType,
+        },
+      });
+
+      if (!media) {
+        // Return empty activity if media not tracked yet
+        return res.status(200).json({
+          watchCount: 0,
+          communityStats: {
+            totalRatings: 0,
+            totalReviews: 0,
+          },
+        });
+      }
+
+      // Get user's watch count
+      const watchHistoryRepository = getRepository(WatchHistory);
+      const watchCount = await watchHistoryRepository.count({
+        where: {
+          userId: user.id,
+          mediaId: media.id,
+        },
+      });
+
+      // Get last watched date
+      const lastWatch = await watchHistoryRepository.findOne({
+        where: {
+          userId: user.id,
+          mediaId: media.id,
+        },
+        order: {
+          watchedAt: 'DESC',
+        },
+      });
+
+      // Get user's review
+      const reviewRepository = getRepository(MediaReview);
+      const userReview = await reviewRepository.findOne({
+        where: {
+          userId: user.id,
+          mediaId: media.id,
+          seasonNumber: IsNull(),
+        },
+      });
+
+      // Get community stats
+      const communityRatings = await reviewRepository
+        .createQueryBuilder('review')
+        .select('COUNT(*)', 'totalRatings')
+        .addSelect('AVG(review.rating)', 'averageRating')
+        .where('review.mediaId = :mediaId', { mediaId: media.id })
+        .andWhere('review.seasonNumber IS NULL')
+        .andWhere('review.rating IS NOT NULL')
+        .getRawOne();
+
+      const totalReviews = await reviewRepository.count({
+        where: {
+          mediaId: media.id,
+          seasonNumber: IsNull(),
+          isPublic: true,
+        },
+      });
+
+      return res.status(200).json({
+        watchCount,
+        lastWatchedAt: lastWatch?.watchedAt,
+        userReview: userReview
+          ? {
+              id: userReview.id,
+              rating: userReview.rating,
+              content: userReview.content,
+              isPublic: userReview.isPublic,
+              containsSpoilers: userReview.containsSpoilers,
+              createdAt: userReview.createdAt,
+              updatedAt: userReview.updatedAt,
+            }
+          : undefined,
+        communityStats: {
+          averageRating: communityRatings?.averageRating
+            ? parseFloat(communityRatings.averageRating)
+            : undefined,
+          totalRatings: parseInt(communityRatings?.totalRatings || '0'),
+          totalReviews,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to retrieve media activity', {
+        label: 'Tracking Routes',
+        error: error.message,
+        mediaId: req.params.mediaId,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to retrieve media activity.',
+      });
+    }
+  }
+);
+
+/**
  * DELETE /api/v1/tracking/reviews/:reviewId
  * Delete a review
  */

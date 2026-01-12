@@ -19,6 +19,7 @@ import IssueModal from '@app/components/IssueModal';
 import ManageSlideOver from '@app/components/ManageSlideOver';
 import DeletionRequestButton from '@app/components/Media/DeletionRequestButton';
 import CommunitySection from '@app/components/MediaDetails/CommunitySection';
+import MediaActivitySection from '@app/components/MediaDetails/MediaActivitySection';
 import MediaSlider from '@app/components/MediaSlider';
 import PersonCard from '@app/components/PersonCard';
 import RequestButton from '@app/components/RequestButton';
@@ -1128,6 +1129,7 @@ const MovieDetails = ({ movie }: MovieDetailsProps) => {
           {data.mediaInfo?.id && (
             <CommunitySection mediaId={data.mediaInfo.id} mediaType="movie" />
           )}
+          <MediaActivitySection tmdbId={data.id} mediaType="movie" />
         </div>
       </div>
       {data.credits.cast.length > 0 && (
