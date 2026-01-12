@@ -11,12 +11,14 @@ import defineMessages from '@app/utils/defineMessages';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
+import OverviewTab from './OverviewTab';
 import ReviewsList from './ReviewsList';
 import UserStatsCard from './UserStatsCard';
 import WatchHistoryList from './WatchHistoryList';
 
 const messages = defineMessages('components.UserActivity', {
   title: 'Activity',
+  overview: 'Overview',
   watchHistory: 'Watch History',
   reviews: 'Reviews',
   statistics: 'Statistics',
@@ -26,14 +28,14 @@ const messages = defineMessages('components.UserActivity', {
   tvShows: 'TV Shows',
 });
 
-type TabType = 'watch' | 'reviews' | 'stats';
+type TabType = 'overview' | 'watch' | 'reviews' | 'stats';
 
 const UserActivity = () => {
   const intl = useIntl();
   const router = useRouter();
   const { user: currentUser } = useUser();
   const userId = Number(router.query.userId);
-  const [activeTab, setActiveTab] = useState<TabType>('watch');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [mediaTypeFilter, setMediaTypeFilter] = useState<
     'all' | 'movie' | 'tv'
   >('all');
@@ -78,6 +80,16 @@ const UserActivity = () => {
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-700">
         <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
+              activeTab === 'overview'
+                ? 'border-indigo-500 text-indigo-500'
+                : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
+            }`}
+          >
+            {intl.formatMessage(messages.overview)}
+          </button>
           <button
             onClick={() => setActiveTab('watch')}
             className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
@@ -149,6 +161,9 @@ const UserActivity = () => {
 
       {/* Content */}
       <div className="mt-6">
+        {activeTab === 'overview' && (
+          <OverviewTab stats={statsData} isLoading={statsLoading} />
+        )}
         {activeTab === 'watch' && (
           <WatchHistoryList data={watchData} isLoading={watchLoading} />
         )}
