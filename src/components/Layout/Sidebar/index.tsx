@@ -18,6 +18,7 @@ import {
   SparklesIcon,
   TrashIcon,
   TvIcon,
+  UserGroupIcon,
   UsersIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -35,6 +36,7 @@ export const menuMessages = defineMessages('components.Layout.Sidebar', {
   available: 'Available',
   activity: 'My Activity',
   reviews: 'Reviews',
+  community: 'Community',
   requests: 'Requests',
   deletionrequests: 'Removals',
   blacklist: 'Blacklist',
@@ -99,6 +101,12 @@ const SidebarLinks: SidebarLinkProps[] = [
     messagesKey: 'reviews',
     svgIcon: <ChatBubbleLeftRightIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/reviews/,
+  },
+  {
+    href: '/community',
+    messagesKey: 'community',
+    svgIcon: <UserGroupIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/community/,
   },
   {
     href: '/requests',

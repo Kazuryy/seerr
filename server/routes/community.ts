@@ -229,12 +229,16 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
     const mostWatchedThisWeek = await watchHistoryRepository
       .createQueryBuilder('watch')
       .select('watch.mediaId', 'mediaId')
+      .addSelect('media.id', 'id')
       .addSelect('media.tmdbId', 'tmdbId')
+      .addSelect('media.mediaType', 'mediaType')
       .addSelect('COUNT(watch.id)', 'watchCount')
       .leftJoin('watch.media', 'media')
       .where('watch.watchedAt >= :oneWeekAgo', { oneWeekAgo })
       .groupBy('watch.mediaId')
+      .addGroupBy('media.id')
       .addGroupBy('media.tmdbId')
+      .addGroupBy('media.mediaType')
       .orderBy('watchCount', 'DESC')
       .limit(5)
       .getRawMany();
@@ -243,7 +247,9 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
     const topRatedThisMonth = await reviewRepository
       .createQueryBuilder('review')
       .select('review.mediaId', 'mediaId')
+      .addSelect('media.id', 'id')
       .addSelect('media.tmdbId', 'tmdbId')
+      .addSelect('media.mediaType', 'mediaType')
       .addSelect('AVG(review.rating)', 'averageRating')
       .addSelect('COUNT(review.id)', 'reviewCount')
       .leftJoin('review.media', 'media')
@@ -251,7 +257,9 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
       .andWhere('review.isPublic = :isPublic', { isPublic: true })
       .andWhere('review.rating IS NOT NULL')
       .groupBy('review.mediaId')
+      .addGroupBy('media.id')
       .addGroupBy('media.tmdbId')
+      .addGroupBy('media.mediaType')
       .having('COUNT(review.id) >= :minReviews', { minReviews: 3 })
       .orderBy('averageRating', 'DESC')
       .limit(5)
@@ -264,11 +272,15 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
       totalReviews,
       averageCommunityRating: avgRating,
       mostWatchedThisWeek: mostWatchedThisWeek.map((item) => ({
+        id: item.id,
         tmdbId: item.tmdbId,
+        mediaType: item.mediaType,
         watchCount: parseInt(item.watchCount),
       })),
       topRatedThisMonth: topRatedThisMonth.map((item) => ({
+        id: item.id,
         tmdbId: item.tmdbId,
+        mediaType: item.mediaType,
         averageRating: parseFloat(item.averageRating),
         reviewCount: parseInt(item.reviewCount),
       })),
