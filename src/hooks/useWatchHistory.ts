@@ -16,6 +16,8 @@ export interface WatchHistoryItem {
     id: number;
     tmdbId: number;
     mediaType: string;
+    title?: string;
+    posterPath?: string;
   };
 }
 

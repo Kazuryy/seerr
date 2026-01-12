@@ -3,6 +3,7 @@ import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import type { WatchHistoryResponse } from '@app/hooks/useTracking';
 import defineMessages from '@app/utils/defineMessages';
 import { FilmIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useIntl } from 'react-intl';
@@ -73,6 +74,17 @@ const WatchHistoryList = ({ data, isLoading }: WatchHistoryListProps) => {
             key={watch.id}
             className="hover:bg-gray-750 flex items-center space-x-4 rounded-lg bg-gray-800 p-4 transition-colors"
           >
+            {watch.media?.posterPath && (
+              <div className="relative h-24 w-16 flex-shrink-0">
+                <Image
+                  src={`https://image.tmdb.org/t/p/w92${watch.media.posterPath}`}
+                  alt={watch.media.title || ''}
+                  fill
+                  className="rounded object-cover"
+                  sizes="64px"
+                />
+              </div>
+            )}
             <div className="flex-1">
               <div className="flex items-center space-x-2">
                 <Link
@@ -81,8 +93,10 @@ const WatchHistoryList = ({ data, isLoading }: WatchHistoryListProps) => {
                   }`}
                   className="text-lg font-medium text-white hover:text-indigo-400"
                 >
-                  {watch.mediaType === 'movie' ? 'Movie' : 'TV Show'} #
-                  {watch.media?.tmdbId}
+                  {watch.media?.title ||
+                    `${watch.mediaType === 'movie' ? 'Movie' : 'TV Show'} #${
+                      watch.media?.tmdbId
+                    }`}
                 </Link>
                 <RewatchBadge watchCount={watchCount} />
               </div>

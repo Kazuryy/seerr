@@ -1,3 +1,4 @@
+import TheMovieDb from '@server/api/themoviedb';
 import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
 import Media from '@server/entity/Media';
@@ -11,6 +12,87 @@ import { IsNull } from 'typeorm';
 import { z } from 'zod';
 
 const trackingRoutes = Router();
+
+/**
+ * Helper function to enrich watch history items with TMDB data
+ */
+async function enrichWatchHistoryWithTitles(watchHistory: WatchHistory[]) {
+  const tmdb = new TheMovieDb();
+
+  // Fetch TMDB data for all unique media items
+  const enrichedHistory = await Promise.all(
+    watchHistory.map(async (entry) => {
+      if (!entry.media) {
+        return entry;
+      }
+
+      try {
+        let title: string | undefined;
+        let posterPath: string | undefined;
+
+        if (entry.mediaType === MediaType.MOVIE) {
+          const movieDetails = await tmdb.getMovie({
+            movieId: entry.media.tmdbId,
+          });
+          title = movieDetails.title;
+          posterPath = movieDetails.poster_path;
+        } else if (entry.mediaType === MediaType.TV) {
+          const tvDetails = await tmdb.getTvShow({ tvId: entry.media.tmdbId });
+          title = tvDetails.name;
+          posterPath = tvDetails.poster_path;
+        }
+
+        // Return a plain object with enriched media data
+        return {
+          id: entry.id,
+          userId: entry.userId,
+          mediaId: entry.mediaId,
+          mediaType: entry.mediaType,
+          seasonNumber: entry.seasonNumber,
+          episodeNumber: entry.episodeNumber,
+          watchedAt: entry.watchedAt,
+          createdAt: entry.createdAt,
+          updatedAt: entry.updatedAt,
+          media: {
+            id: entry.media.id,
+            tmdbId: entry.media.tmdbId,
+            mediaType: entry.media.mediaType,
+            title,
+            posterPath,
+          },
+        };
+      } catch (error) {
+        logger.error('Failed to fetch TMDB data for watch history entry', {
+          label: 'Tracking Routes',
+          mediaId: entry.media.tmdbId,
+          mediaType: entry.mediaType,
+          error: error.message,
+        });
+        // Return a plain object without enrichment if TMDB fetch fails
+        return {
+          id: entry.id,
+          userId: entry.userId,
+          mediaId: entry.mediaId,
+          mediaType: entry.mediaType,
+          seasonNumber: entry.seasonNumber,
+          episodeNumber: entry.episodeNumber,
+          watchedAt: entry.watchedAt,
+          createdAt: entry.createdAt,
+          updatedAt: entry.updatedAt,
+          media: entry.media
+            ? {
+                id: entry.media.id,
+                tmdbId: entry.media.tmdbId,
+                mediaType: entry.media.mediaType,
+              }
+            : undefined,
+        };
+      }
+    })
+  );
+
+  return enrichedHistory;
+}
 
 // Zod schemas for validation
 const markAsWatchedSchema = z.object({
@@ -152,6 +234,9 @@ trackingRoutes.get('/watch', isAuthenticated(), async (req, res, next) => {
       .skip(skip)
       .getManyAndCount();
 
+    // Enrich with TMDB titles and posters
+    const enrichedHistory = await enrichWatchHistoryWithTitles(watchHistory);
+
     return res.status(200).json({
       pageInfo: {
         pages: Math.ceil(totalCount / take),
@@ -159,7 +244,7 @@ trackingRoutes.get('/watch', isAuthenticated(), async (req, res, next) => {
         results: totalCount,
         page: Math.ceil(skip / take) + 1,
       },
-      results: watchHistory,
+      results: enrichedHistory,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -200,12 +285,16 @@ trackingRoutes.get<{ mediaId: string }>(
           userId: user.id,
           mediaId,
         },
+        relations: ['media'],
         order: {
           watchedAt: 'DESC',
         },
       });
 
-      return res.status(200).json(watchHistory);
+      // Enrich with TMDB titles and posters
+      const enrichedHistory = await enrichWatchHistoryWithTitles(watchHistory);
+
+      return res.status(200).json(enrichedHistory);
     } catch (error) {
       logger.error('Failed to retrieve watch history for media', {
         label: 'Tracking Routes',
