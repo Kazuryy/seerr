@@ -693,6 +693,60 @@ trackingRoutes.get<{ mediaId: string }>(
 );
 
 /**
+ * GET /api/v1/tracking/top-rated
+ * Get user's top-rated media items
+ */
+trackingRoutes.get('/top-rated', isAuthenticated(), async (req, res, next) => {
+  try {
+    const user = req.user as User;
+    const take = req.query.take ? Number(req.query.take) : 5;
+
+    const reviewRepository = getRepository(MediaReview);
+    const reviews = await reviewRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.media', 'media')
+      .where('review.userId = :userId', { userId: user.id })
+      .andWhere('review.rating IS NOT NULL')
+      .orderBy('review.rating', 'DESC')
+      .addOrderBy('review.createdAt', 'DESC')
+      .take(take)
+      .getMany();
+
+    const enrichedReviews = await enrichReviewsWithTitles(reviews);
+
+    // Get watch counts for each media item
+    const watchHistoryRepository = getRepository(WatchHistory);
+    const enrichedWithWatchCounts = await Promise.all(
+      enrichedReviews.map(async (review) => {
+        const watchCount = await watchHistoryRepository.count({
+          where: {
+            userId: user.id,
+            mediaId: review.mediaId,
+          },
+        });
+
+        return {
+          ...review,
+          watchCount,
+        };
+      })
+    );
+
+    return res.status(200).json(enrichedWithWatchCounts);
+  } catch (error) {
+    logger.error('Failed to retrieve top-rated items', {
+      label: 'Tracking Routes',
+      error: error.message,
+    });
+
+    return next({
+      status: 500,
+      message: 'Unable to retrieve top-rated items.',
+    });
+  }
+});
+
+/**
  * DELETE /api/v1/tracking/reviews/:reviewId
  * Delete a review
  */

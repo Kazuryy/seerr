@@ -1,6 +1,7 @@
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import type {
   Review,
+  TopRatedItem,
   UserStats,
   WatchHistoryItem,
 } from '@app/hooks/useTracking';
@@ -14,6 +15,7 @@ import {
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
 import RecentActivityFeed from './RecentActivityFeed';
+import TopRatedList from './TopRatedList';
 
 const messages = defineMessages('components.UserActivity.OverviewTab', {
   quickStats: 'Quick Stats',
@@ -39,16 +41,20 @@ interface OverviewTabProps {
   stats?: UserStats;
   recentWatches?: WatchHistoryItem[];
   recentReviews?: Review[];
+  topRated?: TopRatedItem[];
   isLoading: boolean;
   isLoadingActivity?: boolean;
+  isLoadingTopRated?: boolean;
 }
 
 const OverviewTab = ({
   stats,
   recentWatches = [],
   recentReviews = [],
+  topRated = [],
   isLoading,
   isLoadingActivity = false,
+  isLoadingTopRated = false,
 }: OverviewTabProps) => {
   const intl = useIntl();
 
@@ -180,7 +186,7 @@ const OverviewTab = ({
         />
       </div>
 
-      {/* Top Rated - Placeholder for now */}
+      {/* Top Rated */}
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">
@@ -193,12 +199,7 @@ const OverviewTab = ({
             {intl.formatMessage(messages.viewFullRankings)}
           </Link>
         </div>
-        <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 text-center text-gray-400">
-          <p className="text-sm">
-            Top rated section coming soon - switch to Reviews tab to see your
-            reviews
-          </p>
-        </div>
+        <TopRatedList data={topRated} isLoading={isLoadingTopRated} limit={5} />
       </div>
     </div>
   );

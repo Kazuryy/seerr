@@ -2,6 +2,7 @@ import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import PageTitle from '@app/components/Common/PageTitle';
 import {
   useReviews,
+  useTopRated,
   useUserStats,
   useWatchHistory,
 } from '@app/hooks/useTracking';
@@ -61,6 +62,11 @@ const UserActivity = () => {
       userId,
       take: 10,
     });
+
+  // Fetch top-rated items for Overview tab
+  const { data: topRatedData, isLoading: topRatedLoading } = useTopRated({
+    take: 5,
+  });
 
   const { data: statsData, isLoading: statsLoading } = useUserStats(userId);
 
@@ -179,7 +185,9 @@ const UserActivity = () => {
             isLoading={statsLoading}
             recentWatches={recentWatchData?.results}
             recentReviews={recentReviewsData?.results}
+            topRated={topRatedData}
             isLoadingActivity={recentWatchLoading || recentReviewsLoading}
+            isLoadingTopRated={topRatedLoading}
           />
         )}
         {activeTab === 'watch' && (

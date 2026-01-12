@@ -8,6 +8,8 @@ export { useCreateReview } from './useCreateReview';
 export { useMarkAsWatched } from './useMarkAsWatched';
 export { useMyReview, useReviews } from './useReviews';
 export type { Review, ReviewsResponse } from './useReviews';
+export { useTopRated } from './useTopRated';
+export type { TopRatedItem } from './useTopRated';
 export { useUserStats } from './useUserStats';
 export type { UserStats } from './useUserStats';
 export { useMediaWatchHistory, useWatchHistory } from './useWatchHistory';
