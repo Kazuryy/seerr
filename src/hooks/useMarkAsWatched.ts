@@ -7,7 +7,8 @@ interface MarkAsWatchedParams {
   mediaType: MediaType;
   seasonNumber?: number;
   episodeNumber?: number;
-  watchedAt?: string;
+  watchedAt?: Date | string;
+  rating?: number;
 }
 
 interface UseMarkAsWatchedResult {
