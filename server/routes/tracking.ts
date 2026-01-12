@@ -1517,4 +1517,111 @@ trackingRoutes.post(
   }
 );
 
+/**
+ * GET /api/v1/tracking/reviews/feed
+ * Get public reviews feed from the community
+ */
+trackingRoutes.get(
+  '/reviews/feed',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const user = req.user as User;
+      const mediaType = req.query.mediaType as string | undefined;
+      const sort = (req.query.sort as string) || 'latest';
+      const limit = req.query.limit ? Number(req.query.limit) : 20;
+      const offset = req.query.offset ? Number(req.query.offset) : 0;
+
+      const reviewRepository = getRepository(MediaReview);
+      const likeRepository = getRepository(ReviewLike);
+      const commentRepository = getRepository(ReviewComment);
+
+      // Build base query
+      let query = reviewRepository
+        .createQueryBuilder('review')
+        .leftJoinAndSelect('review.user', 'user')
+        .leftJoinAndSelect('review.media', 'media')
+        .where('review.isPublic = :isPublic', { isPublic: true });
+
+      // Filter by media type if specified
+      if (mediaType && mediaType !== 'all') {
+        query = query.andWhere('review.mediaType = :mediaType', { mediaType });
+      }
+
+      // Sort
+      if (sort === 'top') {
+        // Get reviews with most likes in last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        query = query
+          .leftJoin('review.likes', 'likes')
+          .andWhere('review.createdAt >= :thirtyDaysAgo', { thirtyDaysAgo })
+          .groupBy('review.id')
+          .addGroupBy('user.id')
+          .addGroupBy('media.id')
+          .orderBy('COUNT(likes.id)', 'DESC')
+          .addOrderBy('review.createdAt', 'DESC');
+      } else {
+        // Latest
+        query = query.orderBy('review.createdAt', 'DESC');
+      }
+
+      // Pagination
+      query = query.skip(offset).take(limit);
+
+      const reviews = await query.getMany();
+
+      // Enrich with TMDB data and counts
+      const enrichedReviews = await enrichReviewsWithTitles(reviews);
+
+      // Get likes and comments counts
+      const reviewsWithCounts = await Promise.all(
+        enrichedReviews.map(async (review) => {
+          const [likesCount, commentsCount, isLikedByMe] = await Promise.all([
+            likeRepository.count({ where: { reviewId: review.id } }),
+            commentRepository.count({ where: { reviewId: review.id } }),
+            likeRepository
+              .findOne({
+                where: { reviewId: review.id, userId: user.id },
+              })
+              .then((like) => !!like),
+          ]);
+
+          return {
+            id: review.id,
+            user: {
+              id: review.user.id,
+              displayName: review.user.displayName,
+              avatar: review.user.avatar,
+            },
+            media: review.media,
+            rating: review.rating,
+            content: review.content,
+            containsSpoilers: review.containsSpoilers,
+            createdAt: review.createdAt,
+            likesCount,
+            commentsCount,
+            isLikedByMe,
+          };
+        })
+      );
+
+      return res.status(200).json({
+        reviews: reviewsWithCounts,
+      });
+    } catch (error) {
+      logger.error('Failed to retrieve community feed', {
+        label: 'Tracking Routes',
+        error: error.message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to retrieve community feed.',
+      });
+    }
+  }
+);
+
 export default trackingRoutes;

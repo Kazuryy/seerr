@@ -33,6 +33,7 @@ import availableRoutes from './available';
 import blacklistRoutes from './blacklist';
 import calendarRoutes from './calendar';
 import collectionRoutes from './collection';
+import communityRoutes from './community';
 import deletionRoutes from './deletion';
 import discoverRoutes, { createTmdbWithRegionLanguage } from './discover';
 import issueRoutes from './issue';
@@ -169,6 +170,7 @@ router.use('/watchlist', isAuthenticated(), watchlistRoutes);
 router.use('/blacklist', isAuthenticated(), blacklistRoutes);
 router.use('/deletion', isAuthenticated(), deletionRoutes);
 router.use('/tracking', isAuthenticated(), trackingRoutes);
+router.use('/community', isAuthenticated(), communityRoutes);
 router.use('/calendar', isAuthenticated(), calendarRoutes);
 
 router.use('/movie', isAuthenticated(), movieRoutes);
