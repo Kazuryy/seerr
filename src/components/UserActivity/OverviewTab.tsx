@@ -1,5 +1,9 @@
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
-import type { UserStats } from '@app/hooks/useTracking';
+import type {
+  Review,
+  UserStats,
+  WatchHistoryItem,
+} from '@app/hooks/useTracking';
 import defineMessages from '@app/utils/defineMessages';
 import {
   ClockIcon,
@@ -9,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
+import RecentActivityFeed from './RecentActivityFeed';
 
 const messages = defineMessages('components.UserActivity.OverviewTab', {
   quickStats: 'Quick Stats',
@@ -32,10 +37,19 @@ const messages = defineMessages('components.UserActivity.OverviewTab', {
 
 interface OverviewTabProps {
   stats?: UserStats;
+  recentWatches?: WatchHistoryItem[];
+  recentReviews?: Review[];
   isLoading: boolean;
+  isLoadingActivity?: boolean;
 }
 
-const OverviewTab = ({ stats, isLoading }: OverviewTabProps) => {
+const OverviewTab = ({
+  stats,
+  recentWatches = [],
+  recentReviews = [],
+  isLoading,
+  isLoadingActivity = false,
+}: OverviewTabProps) => {
   const intl = useIntl();
 
   if (isLoading) {
@@ -145,7 +159,7 @@ const OverviewTab = ({ stats, isLoading }: OverviewTabProps) => {
         </div>
       </div>
 
-      {/* Recent Activity - Placeholder for now */}
+      {/* Recent Activity */}
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">
@@ -158,12 +172,12 @@ const OverviewTab = ({ stats, isLoading }: OverviewTabProps) => {
             {intl.formatMessage(messages.viewAllActivity)}
           </Link>
         </div>
-        <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 text-center text-gray-400">
-          <p className="text-sm">
-            Activity feed coming soon - switch to Watch History tab to see your
-            watches
-          </p>
-        </div>
+        <RecentActivityFeed
+          watchHistory={recentWatches}
+          reviews={recentReviews}
+          isLoading={isLoadingActivity}
+          limit={5}
+        />
       </div>
 
       {/* Top Rated - Placeholder for now */}

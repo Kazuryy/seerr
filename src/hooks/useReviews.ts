@@ -7,7 +7,6 @@ export interface Review {
   mediaId: number;
   mediaType: MediaType;
   seasonNumber?: number;
-  episodeNumber?: number;
   rating?: number;
   content?: string;
   containsSpoilers: boolean;
@@ -22,6 +21,9 @@ export interface Review {
   media?: {
     id: number;
     tmdbId: number;
+    mediaType?: string;
+    title?: string;
+    posterPath?: string;
   };
 }
 

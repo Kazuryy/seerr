@@ -50,6 +50,18 @@ const UserActivity = () => {
     take: 20,
   });
 
+  // Fetch recent activity for Overview tab (limited to 10 items)
+  const { data: recentWatchData, isLoading: recentWatchLoading } =
+    useWatchHistory({
+      take: 10,
+    });
+
+  const { data: recentReviewsData, isLoading: recentReviewsLoading } =
+    useReviews({
+      userId,
+      take: 10,
+    });
+
   const { data: statsData, isLoading: statsLoading } = useUserStats(userId);
 
   if (!currentUser) {
@@ -162,7 +174,13 @@ const UserActivity = () => {
       {/* Content */}
       <div className="mt-6">
         {activeTab === 'overview' && (
-          <OverviewTab stats={statsData} isLoading={statsLoading} />
+          <OverviewTab
+            stats={statsData}
+            isLoading={statsLoading}
+            recentWatches={recentWatchData?.results}
+            recentReviews={recentReviewsData?.results}
+            isLoadingActivity={recentWatchLoading || recentReviewsLoading}
+          />
         )}
         {activeTab === 'watch' && (
           <WatchHistoryList data={watchData} isLoading={watchLoading} />

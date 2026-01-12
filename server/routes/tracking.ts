@@ -94,6 +94,93 @@ async function enrichWatchHistoryWithTitles(watchHistory: WatchHistory[]) {
   return enrichedHistory;
 }
 
+/**
+ * Helper function to enrich reviews with TMDB data
+ */
+async function enrichReviewsWithTitles(reviews: MediaReview[]) {
+  const tmdb = new TheMovieDb();
+
+  // Fetch TMDB data for all unique media items
+  const enrichedReviews = await Promise.all(
+    reviews.map(async (review) => {
+      if (!review.media) {
+        return review;
+      }
+
+      try {
+        let title: string | undefined;
+        let posterPath: string | undefined;
+
+        if (review.mediaType === MediaType.MOVIE) {
+          const movieDetails = await tmdb.getMovie({
+            movieId: review.media.tmdbId,
+          });
+          title = movieDetails.title;
+          posterPath = movieDetails.poster_path;
+        } else if (review.mediaType === MediaType.TV) {
+          const tvDetails = await tmdb.getTvShow({ tvId: review.media.tmdbId });
+          title = tvDetails.name;
+          posterPath = tvDetails.poster_path;
+        }
+
+        // Return a plain object with enriched media data
+        return {
+          id: review.id,
+          userId: review.userId,
+          mediaId: review.mediaId,
+          mediaType: review.mediaType,
+          seasonNumber: review.seasonNumber,
+          rating: review.rating,
+          content: review.content,
+          containsSpoilers: review.containsSpoilers,
+          isPublic: review.isPublic,
+          createdAt: review.createdAt,
+          updatedAt: review.updatedAt,
+          user: review.user,
+          media: {
+            id: review.media.id,
+            tmdbId: review.media.tmdbId,
+            mediaType: review.media.mediaType,
+            title,
+            posterPath,
+          },
+        };
+      } catch (error) {
+        logger.error('Failed to fetch TMDB data for review', {
+          label: 'Tracking Routes',
+          mediaId: review.media.tmdbId,
+          mediaType: review.mediaType,
+          error: error.message,
+        });
+        // Return a plain object without enrichment if TMDB fetch fails
+        return {
+          id: review.id,
+          userId: review.userId,
+          mediaId: review.mediaId,
+          mediaType: review.mediaType,
+          seasonNumber: review.seasonNumber,
+          rating: review.rating,
+          content: review.content,
+          containsSpoilers: review.containsSpoilers,
+          isPublic: review.isPublic,
+          createdAt: review.createdAt,
+          updatedAt: review.updatedAt,
+          user: review.user,
+          media: review.media
+            ? {
+                id: review.media.id,
+                tmdbId: review.media.tmdbId,
+                mediaType: review.media.mediaType,
+              }
+            : undefined,
+        };
+      }
+    })
+  );
+
+  return enrichedReviews;
+}
+
 // Zod schemas for validation
 const markAsWatchedSchema = z.object({
   mediaId: z.number().int().positive(),
@@ -529,6 +616,8 @@ trackingRoutes.get('/reviews', isAuthenticated(), async (req, res, next) => {
       .skip(skip)
       .getManyAndCount();
 
+    const enrichedReviews = await enrichReviewsWithTitles(reviews);
+
     return res.status(200).json({
       pageInfo: {
         pages: Math.ceil(totalCount / take),
@@ -536,7 +625,7 @@ trackingRoutes.get('/reviews', isAuthenticated(), async (req, res, next) => {
         results: totalCount,
         page: Math.ceil(skip / take) + 1,
       },
-      results: reviews,
+      results: enrichedReviews,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
