@@ -6,12 +6,14 @@ import { Permission, useUser } from '@app/hooks/useUser';
 import { Transition } from '@headlessui/react';
 import {
   CalendarIcon,
+  ChatBubbleLeftRightIcon,
   ClockIcon,
   CogIcon,
   EllipsisHorizontalIcon,
   ExclamationTriangleIcon,
   EyeSlashIcon,
   FilmIcon,
+  RectangleStackIcon,
   SparklesIcon,
   TrashIcon,
   TvIcon,
@@ -19,11 +21,13 @@ import {
 } from '@heroicons/react/24/outline';
 import {
   CalendarIcon as FilledCalendarIcon,
+  ChatBubbleLeftRightIcon as FilledChatBubbleLeftRightIcon,
   ClockIcon as FilledClockIcon,
   CogIcon as FilledCogIcon,
   ExclamationTriangleIcon as FilledExclamationTriangleIcon,
   EyeSlashIcon as FilledEyeSlashIcon,
   FilmIcon as FilledFilmIcon,
+  RectangleStackIcon as FilledRectangleStackIcon,
   SparklesIcon as FilledSparklesIcon,
   TrashIcon as FilledTrashIcon,
   TvIcon as FilledTvIcon,
@@ -104,6 +108,20 @@ const MobileMenu = ({
       svgIcon: <CalendarIcon className="h-6 w-6" />,
       svgIconSelected: <FilledCalendarIcon className="h-6 w-6" />,
       activeRegExp: /^\/calendar/,
+    },
+    {
+      href: '/activity',
+      content: intl.formatMessage(menuMessages.activity),
+      svgIcon: <RectangleStackIcon className="h-6 w-6" />,
+      svgIconSelected: <FilledRectangleStackIcon className="h-6 w-6" />,
+      activeRegExp: /^\/activity|^\/users\/[^/]+\/activity/,
+    },
+    {
+      href: '/reviews',
+      content: intl.formatMessage(menuMessages.reviews),
+      svgIcon: <ChatBubbleLeftRightIcon className="h-6 w-6" />,
+      svgIconSelected: <FilledChatBubbleLeftRightIcon className="h-6 w-6" />,
+      activeRegExp: /^\/reviews/,
     },
     {
       href: '/requests',

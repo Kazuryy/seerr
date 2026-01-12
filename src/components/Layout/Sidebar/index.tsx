@@ -8,11 +8,13 @@ import defineMessages from '@app/utils/defineMessages';
 import { Transition } from '@headlessui/react';
 import {
   CalendarIcon,
+  ChatBubbleLeftRightIcon,
   ClockIcon,
   CogIcon,
   ExclamationTriangleIcon,
   EyeSlashIcon,
   FilmIcon,
+  RectangleStackIcon,
   SparklesIcon,
   TrashIcon,
   TvIcon,
@@ -31,6 +33,8 @@ export const menuMessages = defineMessages('components.Layout.Sidebar', {
   browsetv: 'Series',
   calendar: 'Calendar',
   available: 'Available',
+  activity: 'My Activity',
+  reviews: 'Reviews',
   requests: 'Requests',
   deletionrequests: 'Removals',
   blacklist: 'Blacklist',
@@ -83,6 +87,18 @@ const SidebarLinks: SidebarLinkProps[] = [
     messagesKey: 'calendar',
     svgIcon: <CalendarIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/calendar/,
+  },
+  {
+    href: '/activity',
+    messagesKey: 'activity',
+    svgIcon: <RectangleStackIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/activity|^\/users\/[^/]+\/activity/,
+  },
+  {
+    href: '/reviews',
+    messagesKey: 'reviews',
+    svgIcon: <ChatBubbleLeftRightIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/reviews/,
   },
   {
     href: '/requests',
