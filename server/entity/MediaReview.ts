@@ -5,9 +5,12 @@ import {
   Entity,
   Index,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import Media from './Media';
+import { ReviewComment } from './ReviewComment';
+import { ReviewLike } from './ReviewLike';
 import { User } from './User';
 
 @Entity()
@@ -65,6 +68,12 @@ export class MediaReview {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   public updatedAt: Date;
+
+  @OneToMany(() => ReviewLike, (like) => like.review)
+  public likes: ReviewLike[];
+
+  @OneToMany(() => ReviewComment, (comment) => comment.review)
+  public comments: ReviewComment[];
 
   constructor(init?: Partial<MediaReview>) {
     Object.assign(this, init);

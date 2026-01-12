@@ -3,6 +3,8 @@ import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
 import Media from '@server/entity/Media';
 import { MediaReview } from '@server/entity/MediaReview';
+import { ReviewComment } from '@server/entity/ReviewComment';
+import { ReviewLike } from '@server/entity/ReviewLike';
 import type { User } from '@server/entity/User';
 import { WatchHistory } from '@server/entity/WatchHistory';
 import logger from '@server/logger';
@@ -922,6 +924,412 @@ trackingRoutes.delete<{ reviewId: string }>(
       return next({
         status: 500,
         message: 'Unable to delete review.',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/tracking/reviews/:reviewId/like
+ * Like a review
+ */
+trackingRoutes.post<{ reviewId: string }>(
+  '/reviews/:reviewId/like',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const reviewId = Number(req.params.reviewId);
+      const user = req.user as User;
+
+      const reviewRepository = getRepository(MediaReview);
+      const review = await reviewRepository.findOne({
+        where: { id: reviewId },
+      });
+
+      if (!review) {
+        return next({
+          status: 404,
+          message: 'Review not found.',
+        });
+      }
+
+      // Check if review is public
+      if (!review.isPublic) {
+        return next({
+          status: 403,
+          message: 'Cannot like a private review.',
+        });
+      }
+
+      const likeRepository = getRepository(ReviewLike);
+
+      // Check if already liked
+      const existingLike = await likeRepository.findOne({
+        where: {
+          userId: user.id,
+          reviewId,
+        },
+      });
+
+      if (existingLike) {
+        return next({
+          status: 400,
+          message: 'You have already liked this review.',
+        });
+      }
+
+      // Create the like
+      const like = new ReviewLike({
+        userId: user.id,
+        reviewId,
+      });
+
+      await likeRepository.save(like);
+
+      // Get updated like count
+      const likesCount = await likeRepository.count({
+        where: { reviewId },
+      });
+
+      logger.info(`User ${user.displayName} liked review ${reviewId}`, {
+        label: 'Tracking Routes',
+        userId: user.id,
+        reviewId,
+      });
+
+      return res.status(200).json({
+        liked: true,
+        likesCount,
+      });
+    } catch (error) {
+      logger.error('Failed to like review', {
+        label: 'Tracking Routes',
+        error: error.message,
+        reviewId: req.params.reviewId,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to like review.',
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/v1/tracking/reviews/:reviewId/like
+ * Unlike a review
+ */
+trackingRoutes.delete<{ reviewId: string }>(
+  '/reviews/:reviewId/like',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const reviewId = Number(req.params.reviewId);
+      const user = req.user as User;
+
+      const likeRepository = getRepository(ReviewLike);
+
+      // Find the like
+      const like = await likeRepository.findOne({
+        where: {
+          userId: user.id,
+          reviewId,
+        },
+      });
+
+      if (!like) {
+        return next({
+          status: 404,
+          message: 'Like not found.',
+        });
+      }
+
+      await likeRepository.remove(like);
+
+      // Get updated like count
+      const likesCount = await likeRepository.count({
+        where: { reviewId },
+      });
+
+      logger.info(`User ${user.displayName} unliked review ${reviewId}`, {
+        label: 'Tracking Routes',
+        userId: user.id,
+        reviewId,
+      });
+
+      return res.status(200).json({
+        liked: false,
+        likesCount,
+      });
+    } catch (error) {
+      logger.error('Failed to unlike review', {
+        label: 'Tracking Routes',
+        error: error.message,
+        reviewId: req.params.reviewId,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to unlike review.',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/v1/tracking/reviews/:reviewId/comments
+ * Get comments for a review
+ */
+trackingRoutes.get<{ reviewId: string }>(
+  '/reviews/:reviewId/comments',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const reviewId = Number(req.params.reviewId);
+
+      const reviewRepository = getRepository(MediaReview);
+      const review = await reviewRepository.findOne({
+        where: { id: reviewId },
+      });
+
+      if (!review) {
+        return next({
+          status: 404,
+          message: 'Review not found.',
+        });
+      }
+
+      const commentRepository = getRepository(ReviewComment);
+
+      // Get all top-level comments (no parent) with their replies
+      const comments = await commentRepository
+        .createQueryBuilder('comment')
+        .leftJoinAndSelect('comment.user', 'user')
+        .leftJoinAndSelect('comment.replies', 'replies')
+        .leftJoinAndSelect('replies.user', 'repliesUser')
+        .where('comment.reviewId = :reviewId', { reviewId })
+        .andWhere('comment.parentCommentId IS NULL')
+        .orderBy('comment.createdAt', 'ASC')
+        .addOrderBy('replies.createdAt', 'ASC')
+        .getMany();
+
+      // Format the response
+      const formattedComments = comments.map((comment) => ({
+        id: comment.id,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        user: {
+          id: comment.user.id,
+          displayName: comment.user.displayName,
+          avatar: comment.user.avatar,
+        },
+        replies: comment.replies.map((reply) => ({
+          id: reply.id,
+          content: reply.content,
+          createdAt: reply.createdAt,
+          updatedAt: reply.updatedAt,
+          user: {
+            id: reply.user.id,
+            displayName: reply.user.displayName,
+            avatar: reply.user.avatar,
+          },
+        })),
+      }));
+
+      return res.status(200).json({
+        comments: formattedComments,
+      });
+    } catch (error) {
+      logger.error('Failed to retrieve comments', {
+        label: 'Tracking Routes',
+        error: error.message,
+        reviewId: req.params.reviewId,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to retrieve comments.',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/tracking/reviews/:reviewId/comments
+ * Add a comment to a review
+ */
+trackingRoutes.post<{ reviewId: string }>(
+  '/reviews/:reviewId/comments',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const reviewId = Number(req.params.reviewId);
+      const user = req.user as User;
+
+      // Validate request body
+      const bodySchema = z.object({
+        content: z.string().min(1).max(5000),
+        parentCommentId: z.number().optional(),
+      });
+
+      const validation = bodySchema.safeParse(req.body);
+
+      if (!validation.success) {
+        return next({
+          status: 400,
+          message: 'Invalid request body.',
+        });
+      }
+
+      const { content, parentCommentId } = validation.data;
+
+      const reviewRepository = getRepository(MediaReview);
+      const review = await reviewRepository.findOne({
+        where: { id: reviewId },
+      });
+
+      if (!review) {
+        return next({
+          status: 404,
+          message: 'Review not found.',
+        });
+      }
+
+      // Check if review is public
+      if (!review.isPublic) {
+        return next({
+          status: 403,
+          message: 'Cannot comment on a private review.',
+        });
+      }
+
+      const commentRepository = getRepository(ReviewComment);
+
+      // If replying to a comment, verify it exists
+      if (parentCommentId) {
+        const parentComment = await commentRepository.findOne({
+          where: { id: parentCommentId, reviewId },
+        });
+
+        if (!parentComment) {
+          return next({
+            status: 404,
+            message: 'Parent comment not found.',
+          });
+        }
+      }
+
+      // Create the comment
+      const comment = new ReviewComment({
+        userId: user.id,
+        reviewId,
+        content,
+        parentCommentId,
+      });
+
+      await commentRepository.save(comment);
+
+      // Fetch the comment with user data
+      const savedComment = await commentRepository.findOne({
+        where: { id: comment.id },
+        relations: ['user'],
+      });
+
+      if (!savedComment) {
+        return next({
+          status: 500,
+          message: 'Failed to retrieve created comment.',
+        });
+      }
+
+      logger.info(`User ${user.displayName} commented on review ${reviewId}`, {
+        label: 'Tracking Routes',
+        userId: user.id,
+        reviewId,
+        commentId: comment.id,
+      });
+
+      return res.status(201).json({
+        id: savedComment.id,
+        content: savedComment.content,
+        createdAt: savedComment.createdAt,
+        updatedAt: savedComment.updatedAt,
+        user: {
+          id: savedComment.user.id,
+          displayName: savedComment.user.displayName,
+          avatar: savedComment.user.avatar,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to create comment', {
+        label: 'Tracking Routes',
+        error: error.message,
+        reviewId: req.params.reviewId,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to create comment.',
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/v1/tracking/reviews/:reviewId/comments/:commentId
+ * Delete a comment
+ */
+trackingRoutes.delete<{ reviewId: string; commentId: string }>(
+  '/reviews/:reviewId/comments/:commentId',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const reviewId = Number(req.params.reviewId);
+      const commentId = Number(req.params.commentId);
+      const user = req.user as User;
+
+      const commentRepository = getRepository(ReviewComment);
+      const comment = await commentRepository.findOne({
+        where: { id: commentId, reviewId },
+      });
+
+      if (!comment) {
+        return next({
+          status: 404,
+          message: 'Comment not found.',
+        });
+      }
+
+      // Only allow users to delete their own comments
+      if (comment.userId !== user.id) {
+        return next({
+          status: 403,
+          message: 'You can only delete your own comments.',
+        });
+      }
+
+      await commentRepository.remove(comment);
+
+      logger.info(`User ${user.displayName} deleted comment ${commentId}`, {
+        label: 'Tracking Routes',
+        userId: user.id,
+        reviewId,
+        commentId,
+      });
+
+      return res.status(204).send();
+    } catch (error) {
+      logger.error('Failed to delete comment', {
+        label: 'Tracking Routes',
+        error: error.message,
+        commentId: req.params.commentId,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to delete comment.',
       });
     }
   }

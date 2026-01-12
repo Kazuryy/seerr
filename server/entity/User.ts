@@ -27,6 +27,8 @@ import {
 import Issue from './Issue';
 import { MediaRequest } from './MediaRequest';
 import { MediaReview } from './MediaReview';
+import { ReviewComment } from './ReviewComment';
+import { ReviewLike } from './ReviewLike';
 import SeasonRequest from './SeasonRequest';
 import { UserPushSubscription } from './UserPushSubscription';
 import { UserSettings } from './UserSettings';
@@ -144,6 +146,12 @@ export class User {
 
   @OneToMany(() => MediaReview, (review) => review.user)
   public reviews: MediaReview[];
+
+  @OneToMany(() => ReviewLike, (like) => like.user)
+  public reviewLikes: ReviewLike[];
+
+  @OneToMany(() => ReviewComment, (comment) => comment.user)
+  public reviewComments: ReviewComment[];
 
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;
