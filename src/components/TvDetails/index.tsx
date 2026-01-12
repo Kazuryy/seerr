@@ -19,6 +19,7 @@ import ExternalLinkBlock from '@app/components/ExternalLinkBlock';
 import IssueModal from '@app/components/IssueModal';
 import ManageSlideOver from '@app/components/ManageSlideOver';
 import DeletionRequestButton from '@app/components/Media/DeletionRequestButton';
+import CommunitySection from '@app/components/MediaDetails/CommunitySection';
 import MediaSlider from '@app/components/MediaSlider';
 import PersonCard from '@app/components/PersonCard';
 import RequestButton from '@app/components/RequestButton';
@@ -29,6 +30,7 @@ import {
   MarkAsWatchedButton,
   ReviewButton,
 } from '@app/components/TrackingButtons';
+import BatchMarkSeasonButton from '@app/components/TvDetails/BatchMarkSeasonButton';
 import Season from '@app/components/TvDetails/Season';
 import useDeepLinks from '@app/hooks/useDeepLinks';
 import { MediaType as DeletionMediaType } from '@app/hooks/useDeletionRequests';
@@ -892,6 +894,25 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                                 episodeCount: season.episodeCount,
                               })}
                             </Badge>
+                            {data.mediaInfo?.id && season.episodeCount > 0 && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.stopPropagation();
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                              >
+                                <BatchMarkSeasonButton
+                                  mediaId={data.mediaInfo.id}
+                                  seasonNumber={season.seasonNumber}
+                                  episodeCount={season.episodeCount}
+                                  onUpdate={() => revalidate()}
+                                />
+                              </div>
+                            )}
                           </div>
                           {((!mSeason &&
                             request?.status === MediaRequestStatus.APPROVED) ||
@@ -1342,6 +1363,9 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
               />
             </div>
           </div>
+          {data.mediaInfo?.id && (
+            <CommunitySection mediaId={data.mediaInfo.id} mediaType="tv" />
+          )}
         </div>
       </div>
       {data.credits.cast.length > 0 && (

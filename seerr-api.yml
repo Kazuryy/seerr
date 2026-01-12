@@ -5277,6 +5277,68 @@ paths:
           description: Unauthorized to delete this entry
         '404':
           description: Watch history entry not found
+  /tracking/watch/batch:
+    post:
+      summary: Batch mark episodes as watched
+      description: Mark multiple episodes of a TV show season as watched in a single request
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mediaId
+                - mediaType
+                - seasonNumber
+                - episodeNumbers
+              properties:
+                mediaId:
+                  type: number
+                  description: The media ID (must be a TV show)
+                mediaType:
+                  type: string
+                  enum: [tv]
+                  description: Must be 'tv' - only TV shows support batch marking
+                seasonNumber:
+                  type: number
+                  description: Season number (0 for specials)
+                episodeNumbers:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 1
+                  description: Array of episode numbers to mark as watched
+                watchedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: Optional custom watched date (defaults to current time)
+      responses:
+        '201':
+          description: Episodes marked as watched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  count:
+                    type: number
+                  entries:
+                    type: array
+                    items:
+                      type: object
+        '400':
+          description: Invalid request body
+        '404':
+          description: TV show not found
   /tracking/reviews:
     post:
       summary: Create or update a review

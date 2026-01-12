@@ -3,6 +3,7 @@
  * This provides a clean API for components to import tracking functionality
  */
 
+export { useBatchMarkAsWatched } from './useBatchMarkAsWatched';
 export { useCreateReview } from './useCreateReview';
 export { useMarkAsWatched } from './useMarkAsWatched';
 export { useMyReview, useReviews } from './useReviews';

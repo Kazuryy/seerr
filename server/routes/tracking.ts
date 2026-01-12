@@ -46,6 +46,14 @@ const getReviewsSchema = z.object({
   isPublic: z.coerce.boolean().optional(),
 });
 
+const batchMarkAsWatchedSchema = z.object({
+  mediaId: z.number().int().positive(),
+  mediaType: z.enum(['tv']), // Only TV shows support batch marking
+  seasonNumber: z.number().int().nonnegative(),
+  episodeNumbers: z.array(z.number().int().positive()).min(1),
+  watchedAt: z.string().datetime().optional(),
+});
+
 /**
  * POST /api/v1/tracking/watch
  * Mark media as watched
@@ -653,6 +661,92 @@ trackingRoutes.get<{ userId: string }>(
       return next({
         status: 500,
         message: 'Unable to retrieve user statistics.',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/tracking/watch/batch
+ * Batch mark episodes as watched (for TV shows only)
+ */
+trackingRoutes.post(
+  '/watch/batch',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const validatedBody = batchMarkAsWatchedSchema.parse(req.body);
+      const user = req.user as User;
+
+      // Verify media exists
+      const mediaRepository = getRepository(Media);
+      const media = await mediaRepository.findOne({
+        where: {
+          id: validatedBody.mediaId,
+          mediaType: MediaType.TV,
+        },
+      });
+
+      if (!media) {
+        return next({
+          status: 404,
+          message: 'TV show not found.',
+        });
+      }
+
+      // Create batch watch history entries
+      const watchHistoryRepository = getRepository(WatchHistory);
+      const watchedDate = validatedBody.watchedAt
+        ? new Date(validatedBody.watchedAt)
+        : new Date();
+
+      const watchHistoryEntries = validatedBody.episodeNumbers.map(
+        (episodeNumber) =>
+          new WatchHistory({
+            userId: user.id,
+            mediaId: validatedBody.mediaId,
+            mediaType: MediaType.TV,
+            seasonNumber: validatedBody.seasonNumber,
+            episodeNumber,
+            watchedAt: watchedDate,
+          })
+      );
+
+      await watchHistoryRepository.save(watchHistoryEntries);
+
+      logger.info(
+        `User ${user.displayName} batch marked ${watchHistoryEntries.length} episodes as watched`,
+        {
+          label: 'Tracking Routes',
+          userId: user.id,
+          mediaId: media.id,
+          seasonNumber: validatedBody.seasonNumber,
+          episodeCount: watchHistoryEntries.length,
+        }
+      );
+
+      return res.status(201).json({
+        message: 'Episodes marked as watched successfully',
+        count: watchHistoryEntries.length,
+        entries: watchHistoryEntries,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next({
+          status: 400,
+          message: 'Invalid request body',
+          errors: error.errors,
+        });
+      }
+
+      logger.error('Failed to batch mark episodes as watched', {
+        label: 'Tracking Routes',
+        error: error.message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to mark episodes as watched.',
       });
     }
   }
