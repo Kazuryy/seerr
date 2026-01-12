@@ -121,42 +121,75 @@ The buttons appear in the action row alongside:
 
 ---
 
-## Next Steps
+### ✅ Step 4: Dedicated Tracking Pages (Commit: TBD)
 
-### 🔄 Step 4: Dedicated Tracking Pages
+Created comprehensive pages for user activity and community reviews:
 
-Create new pages for user activity and community features:
+**Pages Created:**
 
-**Pages to Create:**
+1. **User Activity Page** (`/users/[userId]/activity`)
 
-1. **User Activity Page** (`/user/[id]/activity`)
-
-   - User's watch history with filters
-   - User's reviews list
-   - User statistics dashboard
-   - Watch/review timeline
+   - ✅ Page route with permission guard (MANAGE_USERS or MANAGE_REQUESTS)
+   - ✅ UserActivity component with tabbed interface
+   - ✅ Three tabs: Watch History, Reviews, Statistics
+   - ✅ Media type filter (all/movie/tv)
+   - ✅ Auto-detects viewing own profile vs other user
+   - ✅ Pagination with "Load More" button
 
 2. **Community Reviews Page** (`/reviews`)
+   - ✅ Public reviews feed
+   - ✅ Media type filtering (all/movie/tv)
+   - ✅ Pagination controls
+   - ✅ Page info display (showing X of Y)
+   - ✅ Spoiler blur functionality
 
-   - Public reviews feed
-   - Filter by media type
-   - Sort by date/rating
-   - Spoiler blur functionality
+**Components Created:**
 
-3. **Media Reviews Tab**
-   - Tab on movie/TV detail pages
-   - All reviews for that media
-   - Filter public/all (if admin)
+- `UserActivity/index.tsx` - Main component with tabs and filtering
+- `UserActivity/WatchHistoryList.tsx` - Watch history display with media links
+- `UserActivity/ReviewsList.tsx` - User reviews with spoiler toggle
+- `UserActivity/UserStatsCard.tsx` - Statistics dashboard with bar charts
+- `CommunityReviews/index.tsx` - Public reviews feed with filtering
+- `CommunityReviews/ReviewCard.tsx` - Review card with spoiler blur
 
-**Files to Create:**
+**Features Implemented:**
 
-- `src/pages/user/[id]/activity.tsx`
-- `src/pages/reviews/index.tsx`
-- `src/components/WatchHistory/` (list components)
-- `src/components/ReviewsList/` (list components)
-- `src/components/UserStats/` (stats dashboard)
+**User Activity Page:**
+
+- Watch history list with season/episode tracking
+- Reviews list with rating badges
+- Spoiler blur with per-review toggle
+- Statistics cards (watch counts, review stats)
+- Rating distribution visualization
+- Links to media detail pages
+- Empty states for no data
+
+**Community Reviews Page:**
+
+- Public reviews only (private hidden)
+- Media type filtering
+- Spoiler warning badges
+- Blur effect with "Show Spoilers" button
+- User attribution (displayName)
+- Rating display with star icon
+- Date formatting with i18n
+
+**Files Created:**
+
+- `src/pages/users/[userId]/activity.tsx` ✅
+- `src/pages/reviews/index.tsx` ✅
+- `src/components/UserActivity/index.tsx` ✅
+- `src/components/UserActivity/WatchHistoryList.tsx` ✅
+- `src/components/UserActivity/ReviewsList.tsx` ✅
+- `src/components/UserActivity/UserStatsCard.tsx` ✅
+- `src/components/CommunityReviews/index.tsx` ✅
+- `src/components/CommunityReviews/ReviewCard.tsx` ✅
+
+**TypeScript Compilation:** ✅ All files pass typecheck
 
 ---
+
+## Next Steps
 
 ### 🔄 Step 5: Polish & E2E Tests
 
@@ -251,26 +284,29 @@ Final touches and testing:
 
 ## Current Status
 
-**Phase 2 Progress: 60% Complete (3/5 steps)**
+**Phase 2 Progress: 80% Complete (4/5 steps)**
 
 ✅ Foundation complete - Hooks ready for use
 ✅ Basic UI components complete
 ✅ Detail page integration complete - Buttons on Movie/TV pages
-🔄 Dedicated pages pending - Activity & community features
+✅ Dedicated pages complete - Activity & community features implemented
 🔄 Polish & testing pending
 
-**MVP Status:** Feature is functional and usable!
+**Feature Status:** Fully functional end-to-end!
 
 - Users can mark movies/shows as watched ✅
 - Users can write and edit reviews ✅
+- Users can view their activity and statistics ✅
+- Users can browse community reviews ✅
+- Spoiler blur functionality ✅
 - Data persists and syncs properly ✅
 
 **Next Action:**
 
-- **Option A:** Create dedicated tracking pages (/user/[id]/activity, /reviews)
-- **Option B:** Skip to polish & testing for MVP release
-- **Option C:** Test the feature in development mode first
+- **Option A:** Test the feature in development mode (`pnpm dev`)
+- **Option B:** Commit Step 4 and continue to Step 5 (polish & E2E tests)
+- **Option C:** Add navigation links to access new pages
 
 ---
 
-_Progress updated: 2026-01-11_
+_Progress updated: 2026-01-12_
