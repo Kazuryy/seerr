@@ -45,6 +45,9 @@ export class WatchHistory {
   @Column({ type: 'integer', nullable: true })
   public episodeNumber?: number;
 
+  @Column({ type: 'integer', nullable: true })
+  public runtimeMinutes?: number;
+
   @DbAwareColumn({ type: 'datetime' })
   @Index()
   public watchedAt: Date;
