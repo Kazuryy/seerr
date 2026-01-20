@@ -43,12 +43,12 @@ const CommunityFeed = () => {
   return (
     <div>
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-4 flex flex-wrap gap-2 sm:mb-6 sm:gap-4">
         {/* Media Type Filter */}
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2 sm:space-x-2">
           <button
             onClick={() => setMediaType('all')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               mediaType === 'all'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -58,7 +58,7 @@ const CommunityFeed = () => {
           </button>
           <button
             onClick={() => setMediaType('movie')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               mediaType === 'movie'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -68,7 +68,7 @@ const CommunityFeed = () => {
           </button>
           <button
             onClick={() => setMediaType('tv')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               mediaType === 'tv'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -79,10 +79,10 @@ const CommunityFeed = () => {
         </div>
 
         {/* Sort Filter */}
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2 sm:space-x-2">
           <button
             onClick={() => setSort('latest')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               sort === 'latest'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -92,7 +92,7 @@ const CommunityFeed = () => {
           </button>
           <button
             onClick={() => setSort('top')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               sort === 'top'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'

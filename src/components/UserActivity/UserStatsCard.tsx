@@ -125,38 +125,64 @@ const UserStatsCard = ({ data, isLoading }: UserStatsCardProps) => {
           />
         </div>
 
-        {/* Rating Distribution */}
+        {/* Rating Distribution - Vertical Bar Chart */}
         {data.reviewStats.ratingDistribution.length > 0 && (
           <div className="mt-6">
             <h3 className="mb-4 text-lg font-medium text-white">
               {intl.formatMessage(messages.ratingDistribution)}
             </h3>
-            <div className="space-y-2">
-              {data.reviewStats.ratingDistribution
-                .sort((a, b) => b.rating - a.rating)
-                .map((item) => (
+            <div className="grid grid-cols-10 gap-1 sm:gap-2">
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((rating) => {
+                const item = data.reviewStats.ratingDistribution.find(
+                  (r) => r.rating === rating
+                );
+                const count = item?.count || 0;
+                const heightPercent =
+                  maxRatingCount > 0 ? (count / maxRatingCount) * 100 : 0;
+                const getRatingBarColor = (r: number) => {
+                  if (r >= 9) return 'from-emerald-500 to-emerald-400';
+                  if (r >= 7) return 'from-green-500 to-green-400';
+                  if (r >= 5) return 'from-yellow-500 to-yellow-400';
+                  if (r >= 3) return 'from-orange-500 to-orange-400';
+                  return 'from-red-500 to-red-400';
+                };
+
+                return (
                   <div
-                    key={item.rating}
-                    className="flex items-center space-x-3"
+                    key={rating}
+                    className="flex flex-col items-center"
+                    title={`${rating}/10: ${count} reviews`}
                   >
-                    <div className="w-12 text-right text-sm font-medium text-gray-400">
-                      {item.rating}/10
+                    {/* Bar container */}
+                    <div className="relative flex h-24 w-full items-end justify-center rounded-t-md bg-gray-700/50 sm:h-32">
+                      <div
+                        className={`w-full rounded-t-md bg-gradient-to-t ${getRatingBarColor(rating)} transition-all duration-500`}
+                        style={{
+                          height: `${Math.max(heightPercent, count > 0 ? 8 : 0)}%`,
+                        }}
+                      />
+                      {/* Count label on top of bar */}
+                      {count > 0 && (
+                        <span className="absolute top-1 text-xs font-semibold text-white drop-shadow-md">
+                          {count}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <div className="h-6 overflow-hidden rounded bg-gray-700">
-                        <div
-                          className="h-full bg-yellow-500 transition-all"
-                          style={{
-                            width: `${(item.count / maxRatingCount) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="w-12 text-sm font-medium text-gray-300">
-                      {item.count}
+                    {/* Rating label */}
+                    <div className="mt-1 flex h-6 w-full items-center justify-center rounded-b-md bg-gray-700">
+                      <span className="text-xs font-bold text-gray-300 sm:text-sm">
+                        {rating}
+                      </span>
                     </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+            {/* Legend */}
+            <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-500">
+              <span>← Lower</span>
+              <span className="font-medium text-gray-400">Rating Scale</span>
+              <span>Higher →</span>
             </div>
           </div>
         )}

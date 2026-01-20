@@ -1,4 +1,5 @@
 import Alert from '@app/components/Common/Alert';
+import UserBadgeDisplay from '@app/components/Badges/UserBadgeDisplay';
 import Button from '@app/components/Common/Button';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import {
@@ -64,11 +65,7 @@ const CommentItem = ({
       <div className="flex space-x-3">
         <Link href={`/users/${comment.user.id}`} className="flex-shrink-0">
           <img
-            src={
-              comment.user.avatar
-                ? `/api/v1${comment.user.avatar}`
-                : '/avatars/default.png'
-            }
+            src={comment.user.avatar || '/avatars/default.png'}
             alt={comment.user.displayName}
             className="h-8 w-8 rounded-full"
           />
@@ -77,12 +74,15 @@ const CommentItem = ({
         <div className="flex-1">
           <div className="rounded-lg bg-gray-700 px-4 py-2">
             <div className="mb-1 flex items-center justify-between">
-              <Link
-                href={`/users/${comment.user.id}`}
-                className="text-sm font-semibold text-white hover:text-indigo-400"
-              >
-                {comment.user.displayName}
-              </Link>
+              <div className="flex items-center space-x-2">
+                <Link
+                  href={`/users/${comment.user.id}`}
+                  className="text-sm font-semibold text-white hover:text-indigo-400"
+                >
+                  {comment.user.displayName}
+                </Link>
+                <UserBadgeDisplay userId={comment.user.id} limit={2} size="sm" />
+              </div>
               {isOwnComment && (
                 <button
                   onClick={handleDelete}
@@ -203,7 +203,7 @@ const ReviewComments = ({ reviewId }: ReviewCommentsProps) => {
       {user && (
         <form onSubmit={handleSubmit} className="flex space-x-3">
           <img
-            src={user.avatar ? `/api/v1${user.avatar}` : '/avatars/default.png'}
+            src={user.avatar || '/avatars/default.png'}
             alt={user.displayName}
             className="h-8 w-8 flex-shrink-0 rounded-full"
           />

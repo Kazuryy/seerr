@@ -1,5 +1,6 @@
 import { getRepository } from '@server/datasource';
 import { MediaReview } from '@server/entity/MediaReview';
+import { User } from '@server/entity/User';
 import { WatchHistory } from '@server/entity/WatchHistory';
 import logger from '@server/logger';
 import { isAuthenticated } from '@server/middleware/auth';
@@ -57,81 +58,93 @@ communityRoutes.get(
       if (metric === 'reviews') {
         // Top reviewers
         const reviewRepository = getRepository(MediaReview);
+        const userRepository = getRepository(User);
 
         const results = await reviewRepository
           .createQueryBuilder('review')
           .select('review.userId', 'userId')
-          .addSelect('user.displayName', 'displayName')
-          .addSelect('user.avatar', 'avatar')
           .addSelect('COUNT(review.id)', 'value')
-          .leftJoin('review.user', 'user')
           .where('review.createdAt >= :startDate', { startDate })
           .andWhere('review.isPublic = :isPublic', { isPublic: true })
           .groupBy('review.userId')
-          .addGroupBy('user.displayName')
-          .addGroupBy('user.avatar')
           .orderBy('value', 'DESC')
           .limit(limit)
           .getRawMany();
 
-        leaderboard = results.map((r) => ({
-          userId: r.userId,
-          displayName: r.displayName,
-          avatar: r.avatar,
-          value: parseInt(r.value),
-        }));
+        // Fetch user data for each result
+        leaderboard = await Promise.all(
+          results.map(async (r) => {
+            const user = await userRepository.findOne({
+              where: { id: r.userId },
+            });
+            return {
+              userId: r.userId,
+              displayName: user?.displayName || 'Unknown User',
+              avatar: user?.avatar || '',
+              value: parseInt(r.value),
+            };
+          })
+        );
       } else if (metric === 'likes') {
         // Most liked reviewers
         const reviewRepository = getRepository(MediaReview);
+        const userRepository = getRepository(User);
 
         const results = await reviewRepository
           .createQueryBuilder('review')
           .select('review.userId', 'userId')
-          .addSelect('user.displayName', 'displayName')
-          .addSelect('user.avatar', 'avatar')
           .addSelect('COUNT(likes.id)', 'value')
-          .leftJoin('review.user', 'user')
           .leftJoin('review.likes', 'likes')
           .where('review.createdAt >= :startDate', { startDate })
           .andWhere('review.isPublic = :isPublic', { isPublic: true })
           .groupBy('review.userId')
-          .addGroupBy('user.displayName')
-          .addGroupBy('user.avatar')
           .orderBy('value', 'DESC')
           .limit(limit)
           .getRawMany();
 
-        leaderboard = results.map((r) => ({
-          userId: r.userId,
-          displayName: r.displayName,
-          avatar: r.avatar,
-          value: parseInt(r.value),
-        }));
+        // Fetch user data for each result
+        leaderboard = await Promise.all(
+          results.map(async (r) => {
+            const user = await userRepository.findOne({
+              where: { id: r.userId },
+            });
+            return {
+              userId: r.userId,
+              displayName: user?.displayName || 'Unknown User',
+              avatar: user?.avatar || '',
+              value: parseInt(r.value),
+            };
+          })
+        );
       } else if (metric === 'watches') {
         // Most active watchers
         const watchHistoryRepository = getRepository(WatchHistory);
+        const userRepository = getRepository(User);
 
         const results = await watchHistoryRepository
           .createQueryBuilder('watch')
           .select('watch.userId', 'userId')
-          .addSelect('user.displayName', 'displayName')
-          .addSelect('user.avatar', 'avatar')
           .addSelect('COUNT(watch.id)', 'value')
-          .leftJoin('watch.user', 'user')
           .where('watch.watchedAt >= :startDate', { startDate })
           .groupBy('watch.userId')
-          .addGroupBy('user.displayName')
-          .addGroupBy('user.avatar')
           .orderBy('value', 'DESC')
           .limit(limit)
           .getRawMany();
 
-        leaderboard = results.map((r) => ({
-          userId: r.userId,
-          displayName: r.displayName,
-          avatar: r.avatar,
-          value: parseInt(r.value),
-        }));
+        // Fetch user data for each result
+        leaderboard = await Promise.all(
+          results.map(async (r) => {
+            const user = await userRepository.findOne({
+              where: { id: r.userId },
+            });
+            return {
+              userId: r.userId,
+              displayName: user?.displayName || 'Unknown User',
+              avatar: user?.avatar || '',
+              value: parseInt(r.value),
+            };
+          })
+        );
       } else {
         return next({
           status: 400,
@@ -260,7 +273,7 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
       .addGroupBy('media.id')
       .addGroupBy('media.tmdbId')
       .addGroupBy('media.mediaType')
-      .having('COUNT(review.id) >= :minReviews', { minReviews: 3 })
+      .having('COUNT(review.id) >= :minReviews', { minReviews: 1 })
       .orderBy('averageRating', 'DESC')
       .limit(5)
       .getRawMany();

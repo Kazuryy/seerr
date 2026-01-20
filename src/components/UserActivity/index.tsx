@@ -1,3 +1,5 @@
+import BadgeGrid from '@app/components/Badges/BadgeGrid';
+import BadgeProgress from '@app/components/Badges/BadgeProgress';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import PageTitle from '@app/components/Common/PageTitle';
 import {
@@ -10,7 +12,7 @@ import { useUser } from '@app/hooks/useUser';
 import Error from '@app/pages/_error';
 import defineMessages from '@app/utils/defineMessages';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import OverviewTab from './OverviewTab';
 import ReviewsList from './ReviewsList';
@@ -23,13 +25,14 @@ const messages = defineMessages('components.UserActivity', {
   watchHistory: 'Watch History',
   reviews: 'Reviews',
   statistics: 'Statistics',
+  badges: 'Badges',
   noActivity: 'No activity yet',
   allMedia: 'All',
   movies: 'Movies',
   tvShows: 'TV Shows',
 });
 
-type TabType = 'overview' | 'watch' | 'reviews' | 'stats';
+type TabType = 'overview' | 'watch' | 'reviews' | 'stats' | 'badges';
 
 const UserActivity = () => {
   const intl = useIntl();
@@ -40,6 +43,14 @@ const UserActivity = () => {
   const [mediaTypeFilter, setMediaTypeFilter] = useState<
     'all' | 'movie' | 'tv'
   >('all');
+
+  // Read tab from URL query parameter
+  useEffect(() => {
+    const tab = router.query.tab as string;
+    if (tab && ['overview', 'watch', 'reviews', 'stats', 'badges'].includes(tab)) {
+      setActiveTab(tab as TabType);
+    }
+  }, [router.query.tab]);
 
   const { data: watchData, isLoading: watchLoading } = useWatchHistory({
     mediaType: mediaTypeFilter === 'all' ? undefined : mediaTypeFilter,
@@ -81,7 +92,7 @@ const UserActivity = () => {
   const isOwnProfile = currentUser.id === userId;
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-2 py-4 sm:px-4 sm:py-6">
       <PageTitle
         title={[
           intl.formatMessage(messages.title),
@@ -89,18 +100,18 @@ const UserActivity = () => {
         ]}
       />
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">
           {intl.formatMessage(messages.title)}
         </h1>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 border-b border-gray-700">
-        <nav className="-mb-px flex space-x-8">
+      <div className="mb-4 border-b border-gray-700 sm:mb-6">
+        <nav className="-mb-px flex space-x-4 overflow-x-auto sm:space-x-8">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-xs font-medium sm:py-4 sm:text-sm ${
               activeTab === 'overview'
                 ? 'border-indigo-500 text-indigo-500'
                 : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
@@ -110,7 +121,7 @@ const UserActivity = () => {
           </button>
           <button
             onClick={() => setActiveTab('watch')}
-            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-xs font-medium sm:py-4 sm:text-sm ${
               activeTab === 'watch'
                 ? 'border-indigo-500 text-indigo-500'
                 : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
@@ -120,7 +131,7 @@ const UserActivity = () => {
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-xs font-medium sm:py-4 sm:text-sm ${
               activeTab === 'reviews'
                 ? 'border-indigo-500 text-indigo-500'
                 : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
@@ -130,7 +141,7 @@ const UserActivity = () => {
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-xs font-medium sm:py-4 sm:text-sm ${
               activeTab === 'stats'
                 ? 'border-indigo-500 text-indigo-500'
                 : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
@@ -138,15 +149,25 @@ const UserActivity = () => {
           >
             {intl.formatMessage(messages.statistics)}
           </button>
+          <button
+            onClick={() => setActiveTab('badges')}
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-xs font-medium sm:py-4 sm:text-sm ${
+              activeTab === 'badges'
+                ? 'border-indigo-500 text-indigo-500'
+                : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
+            }`}
+          >
+            {intl.formatMessage(messages.badges)}
+          </button>
         </nav>
       </div>
 
       {/* Media Type Filter (for watch history) */}
       {activeTab === 'watch' && (
-        <div className="mb-4 flex space-x-2">
+        <div className="mb-4 flex flex-wrap gap-2 sm:space-x-2">
           <button
             onClick={() => setMediaTypeFilter('all')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               mediaTypeFilter === 'all'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -156,7 +177,7 @@ const UserActivity = () => {
           </button>
           <button
             onClick={() => setMediaTypeFilter('movie')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               mediaTypeFilter === 'movie'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -166,7 +187,7 @@ const UserActivity = () => {
           </button>
           <button
             onClick={() => setMediaTypeFilter('tv')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               mediaTypeFilter === 'tv'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -198,6 +219,16 @@ const UserActivity = () => {
         )}
         {activeTab === 'stats' && (
           <UserStatsCard data={statsData} isLoading={statsLoading} />
+        )}
+        {activeTab === 'badges' && (
+          <div className="space-y-6">
+            {isOwnProfile && (
+              <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
+                <BadgeProgress userId={userId} />
+              </div>
+            )}
+            <BadgeGrid userId={userId} showLocked={isOwnProfile} />
+          </div>
         )}
       </div>
     </div>

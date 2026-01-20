@@ -1,25 +1,22 @@
-import RewatchBadge from '@app/components/ActivityDashboard/RewatchBadge';
+import Badge from '@app/components/Common/Badge';
+import CachedImage from '@app/components/Common/CachedImage';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import type { Review, WatchHistoryItem } from '@app/hooks/useTracking';
 import defineMessages from '@app/utils/defineMessages';
-import { ClockIcon, FilmIcon, StarIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
+import { ClockIcon } from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { useIntl } from 'react-intl';
+import { FormattedRelativeTime, useIntl } from 'react-intl';
 
 const messages = defineMessages('components.UserActivity.RecentActivityFeed', {
   watched: 'Watched',
   reviewed: 'Reviewed',
+  rating: 'Rating',
   season: 'S{season}',
   episode: 'E{episode}',
-  timeAgo: '{time} ago',
-  justNow: 'Just now',
-  minutesAgo: '{count, plural, one {# minute ago} other {# minutes ago}}',
-  hoursAgo: '{count, plural, one {# hour ago} other {# hours ago}}',
-  daysAgo: '{count, plural, one {# day ago} other {# days ago}}',
-  weeksAgo: '{count, plural, one {# week ago} other {# weeks ago}}',
   noActivity: 'No recent activity',
+  rewatch: 'Rewatch #{count}',
 });
 
 interface ActivityItem {
@@ -81,153 +78,235 @@ const RecentActivityFeed = ({
     return watchCounts.get(key) || 1;
   };
 
-  const formatTimeAgo = (timestamp: Date): string => {
-    const now = new Date();
-    const diffInMs = now.getTime() - timestamp.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    const diffInWeeks = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 7));
-
-    if (diffInMinutes < 1) {
-      return intl.formatMessage(messages.justNow);
-    } else if (diffInMinutes < 60) {
-      return intl.formatMessage(messages.minutesAgo, { count: diffInMinutes });
-    } else if (diffInHours < 24) {
-      return intl.formatMessage(messages.hoursAgo, { count: diffInHours });
-    } else if (diffInDays < 7) {
-      return intl.formatMessage(messages.daysAgo, { count: diffInDays });
-    } else {
-      return intl.formatMessage(messages.weeksAgo, { count: diffInWeeks });
-    }
-  };
-
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-8">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (activities.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-        <ClockIcon className="mb-2 h-12 w-12" />
-        <p className="text-sm">{intl.formatMessage(messages.noActivity)}</p>
+      <div className="flex w-full flex-col items-center justify-center py-12 text-white">
+        <ClockIcon className="mb-4 h-16 w-16 text-gray-400" />
+        <span className="text-2xl text-gray-400">
+          {intl.formatMessage(messages.noActivity)}
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {activities.map((activity, index) => {
         if (activity.type === 'watch') {
           const watch = activity.data as WatchHistoryItem;
           const watchCount = getWatchCount(watch);
+          const mediaUrl = watch.media
+            ? `/${watch.media.mediaType === 'movie' ? 'movie' : 'tv'}/${watch.media.tmdbId}`
+            : '#';
+          const title =
+            watch.media?.title ||
+            `${watch.mediaType === 'movie' ? 'Movie' : 'TV Show'} #${watch.media?.tmdbId}`;
+          const relativeTime = Math.floor(
+            (activity.timestamp.getTime() - Date.now()) / 1000
+          );
 
           return (
             <div
               key={`watch-${watch.id}-${index}`}
-              className="flex items-start space-x-3 rounded-lg border border-gray-700 bg-gray-800 p-4"
+              className="relative flex w-full flex-col justify-between overflow-hidden rounded-xl bg-gray-800 py-4 text-gray-400 shadow-md ring-1 ring-gray-700 xl:h-28 xl:flex-row"
             >
-              <div className="flex-shrink-0">
-                {watch.media?.posterPath ? (
-                  <div className="relative h-16 w-12">
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w92${watch.media.posterPath}`}
-                      alt={watch.media.title || ''}
-                      fill
-                      className="rounded object-cover"
-                      sizes="48px"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-16 w-12 items-center justify-center rounded bg-gray-700">
-                    <FilmIcon className="h-6 w-6 text-gray-400" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-400">
-                    {formatTimeAgo(activity.timestamp)}
-                  </span>
-                  <RewatchBadge watchCount={watchCount} />
+              {/* Backdrop Image */}
+              {watch.media?.backdropPath && (
+                <div className="absolute inset-0 z-0 w-full overflow-hidden bg-cover bg-center xl:w-2/3">
+                  <CachedImage
+                    type="tmdb"
+                    src={`https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${watch.media.backdropPath}`}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    fill
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(90deg, rgba(31, 41, 55, 0.47) 0%, rgba(31, 41, 55, 1) 100%)',
+                    }}
+                  />
                 </div>
-                <div className="mt-1">
-                  <span className="text-sm text-gray-400">
-                    {intl.formatMessage(messages.watched)}{' '}
-                  </span>
+              )}
+              <div className="relative flex w-full flex-col justify-between overflow-hidden sm:flex-row">
+                <div className="relative z-10 flex w-full items-center overflow-hidden pl-4 pr-4 sm:pr-0 xl:w-7/12 2xl:w-2/3">
                   <Link
-                    href={`/${watch.mediaType === 'movie' ? 'movie' : 'tv'}/${
-                      watch.media?.tmdbId
-                    }`}
-                    className="font-medium text-white hover:text-indigo-400"
+                    href={mediaUrl}
+                    className="relative h-auto w-12 flex-shrink-0 scale-100 transform-gpu overflow-hidden rounded-md transition duration-300 hover:scale-105"
                   >
-                    {watch.media?.title ||
-                      `${watch.mediaType === 'movie' ? 'Movie' : 'TV Show'} #${
-                        watch.media?.tmdbId
-                      }`}
+                    <CachedImage
+                      type="tmdb"
+                      src={
+                        watch.media?.posterPath
+                          ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${watch.media.posterPath}`
+                          : '/images/seerr_poster_not_found.png'
+                      }
+                      alt=""
+                      sizes="100vw"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        objectFit: 'cover',
+                      }}
+                      width={600}
+                      height={900}
+                    />
                   </Link>
+                  <div className="flex flex-col justify-center overflow-hidden pl-2 xl:pl-4">
+                    <div className="pt-0.5 text-xs font-medium text-white sm:pt-1">
+                      {intl.formatMessage(messages.watched)}
+                    </div>
+                    <Link
+                      href={mediaUrl}
+                      className="mr-2 min-w-0 truncate text-lg font-bold text-white hover:underline xl:text-xl"
+                    >
+                      {title}
+                    </Link>
+                    {watch.mediaType === 'tv' && watch.seasonNumber !== undefined && (
+                      <span className="text-sm text-gray-400">
+                        {intl.formatMessage(messages.season, {
+                          season: watch.seasonNumber,
+                        })}
+                        {watch.episodeNumber !== undefined &&
+                          ` ${intl.formatMessage(messages.episode, {
+                            episode: watch.episodeNumber,
+                          })}`}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {watch.seasonNumber !== undefined && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    {intl.formatMessage(messages.season, {
-                      season: watch.seasonNumber,
-                    })}
-                    {watch.episodeNumber !== undefined &&
-                      ` ${intl.formatMessage(messages.episode, {
-                        episode: watch.episodeNumber,
-                      })}`}
-                  </p>
-                )}
+                <div className="z-10 mt-4 ml-4 flex w-full flex-col justify-center gap-1 overflow-hidden pr-4 text-sm sm:ml-2 sm:mt-0 xl:flex-1 xl:pr-0">
+                  <div className="card-field">
+                    <span className="card-field-name">
+                      {intl.formatMessage(messages.watched)}
+                    </span>
+                    <span className="flex truncate text-sm text-gray-300">
+                      <FormattedRelativeTime
+                        value={relativeTime}
+                        updateIntervalInSeconds={60}
+                        numeric="auto"
+                      />
+                    </span>
+                  </div>
+                  {watchCount > 1 && (
+                    <div className="card-field">
+                      <Badge badgeType="warning">
+                        {intl.formatMessage(messages.rewatch, {
+                          count: watchCount,
+                        })}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );
         } else {
           const review = activity.data as Review;
+          const mediaUrl = review.media
+            ? `/${review.media.mediaType === 'movie' ? 'movie' : 'tv'}/${review.media.tmdbId}`
+            : '#';
+          const title =
+            review.media?.title || `Media #${review.media?.tmdbId}`;
+          const relativeTime = Math.floor(
+            (activity.timestamp.getTime() - Date.now()) / 1000
+          );
 
           return (
             <div
               key={`review-${review.id}-${index}`}
-              className="flex items-start space-x-3 rounded-lg border border-gray-700 bg-gray-800 p-4"
+              className="relative flex w-full flex-col justify-between overflow-hidden rounded-xl bg-gray-800 py-4 text-gray-400 shadow-md ring-1 ring-gray-700 xl:h-28 xl:flex-row"
             >
-              <div className="flex-shrink-0">
-                <div className="flex h-16 w-12 items-center justify-center rounded bg-indigo-900 bg-opacity-50">
-                  <StarIcon className="h-6 w-6 text-yellow-400" />
+              {/* Backdrop Image */}
+              {review.media?.backdropPath && (
+                <div className="absolute inset-0 z-0 w-full overflow-hidden bg-cover bg-center xl:w-2/3">
+                  <CachedImage
+                    type="tmdb"
+                    src={`https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${review.media.backdropPath}`}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    fill
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(90deg, rgba(31, 41, 55, 0.47) 0%, rgba(31, 41, 55, 1) 100%)',
+                    }}
+                  />
                 </div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-400">
-                    {formatTimeAgo(activity.timestamp)}
-                  </span>
-                  {review.rating && (
-                    <span className="flex items-center space-x-1 text-xs text-yellow-400">
-                      <StarIcon className="h-3 w-3 fill-current" />
-                      <span>{review.rating}/10</span>
+              )}
+              <div className="relative flex w-full flex-col justify-between overflow-hidden sm:flex-row">
+                <div className="relative z-10 flex w-full items-center overflow-hidden pl-4 pr-4 sm:pr-0 xl:w-7/12 2xl:w-2/3">
+                  <Link
+                    href={mediaUrl}
+                    className="relative h-auto w-12 flex-shrink-0 scale-100 transform-gpu overflow-hidden rounded-md transition duration-300 hover:scale-105"
+                  >
+                    <CachedImage
+                      type="tmdb"
+                      src={
+                        review.media?.posterPath
+                          ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${review.media.posterPath}`
+                          : '/images/seerr_poster_not_found.png'
+                      }
+                      alt=""
+                      sizes="100vw"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        objectFit: 'cover',
+                      }}
+                      width={600}
+                      height={900}
+                    />
+                  </Link>
+                  <div className="flex flex-col justify-center overflow-hidden pl-2 xl:pl-4">
+                    <div className="pt-0.5 text-xs font-medium text-white sm:pt-1">
+                      {intl.formatMessage(messages.reviewed)}
+                    </div>
+                    <Link
+                      href={mediaUrl}
+                      className="mr-2 min-w-0 truncate text-lg font-bold text-white hover:underline xl:text-xl"
+                    >
+                      {title}
+                    </Link>
+                  </div>
+                </div>
+                <div className="z-10 mt-4 ml-4 flex w-full flex-col justify-center gap-1 overflow-hidden pr-4 text-sm sm:ml-2 sm:mt-0 xl:flex-1 xl:pr-0">
+                  <div className="card-field">
+                    <span className="card-field-name">
+                      {intl.formatMessage(messages.reviewed)}
                     </span>
+                    <span className="flex truncate text-sm text-gray-300">
+                      <FormattedRelativeTime
+                        value={relativeTime}
+                        updateIntervalInSeconds={60}
+                        numeric="auto"
+                      />
+                    </span>
+                  </div>
+                  {review.rating && (
+                    <div className="card-field">
+                      <span className="card-field-name">
+                        {intl.formatMessage(messages.rating)}
+                      </span>
+                      <span className="flex items-center text-sm text-yellow-500">
+                        <StarIcon className="mr-1 h-4 w-4" />
+                        {review.rating}/10
+                      </span>
+                    </div>
+                  )}
+                  {review.content && (
+                    <p className="mt-1 line-clamp-1 text-xs text-gray-400 italic">
+                      &ldquo;{review.content}&rdquo;
+                    </p>
                   )}
                 </div>
-                <div className="mt-1">
-                  <span className="text-sm text-gray-400">
-                    {intl.formatMessage(messages.reviewed)}{' '}
-                  </span>
-                  <Link
-                    href={`/${review.mediaType === 'movie' ? 'movie' : 'tv'}/${
-                      review.media?.tmdbId
-                    }`}
-                    className="font-medium text-white hover:text-indigo-400"
-                  >
-                    {review.media?.title || `Media #${review.media?.tmdbId}`}
-                  </Link>
-                </div>
-                {review.content && (
-                  <p className="line-clamp-2 mt-2 text-sm text-gray-300">
-                    {review.content}
-                  </p>
-                )}
               </div>
             </div>
           );

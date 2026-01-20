@@ -1,4 +1,5 @@
 import Alert from '@app/components/Common/Alert';
+import UserBadgeDisplay from '@app/components/Badges/UserBadgeDisplay';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import { useLeaderboard } from '@app/hooks/useCommunity';
 import defineMessages from '@app/utils/defineMessages';
@@ -58,12 +59,12 @@ const Leaderboard = () => {
   return (
     <div>
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:flex-wrap sm:gap-4">
         {/* Period Filter */}
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2 sm:space-x-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               period === 'week'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -73,7 +74,7 @@ const Leaderboard = () => {
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               period === 'month'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -83,7 +84,7 @@ const Leaderboard = () => {
           </button>
           <button
             onClick={() => setPeriod('year')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               period === 'year'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -93,7 +94,7 @@ const Leaderboard = () => {
           </button>
           <button
             onClick={() => setPeriod('alltime')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               period === 'alltime'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -104,10 +105,10 @@ const Leaderboard = () => {
         </div>
 
         {/* Metric Filter */}
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2 sm:space-x-2">
           <button
             onClick={() => setMetric('reviews')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               metric === 'reviews'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -117,7 +118,7 @@ const Leaderboard = () => {
           </button>
           <button
             onClick={() => setMetric('likes')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               metric === 'likes'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -127,7 +128,7 @@ const Leaderboard = () => {
           </button>
           <button
             onClick={() => setMetric('watches')}
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium sm:px-4 sm:py-2 sm:text-sm ${
               metric === 'watches'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -140,17 +141,17 @@ const Leaderboard = () => {
 
       {/* Leaderboard Table */}
       {data && data.leaderboard.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
+        <div className="overflow-x-auto overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-750 border-b border-gray-700">
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-400 sm:px-6 sm:py-3">
                   {intl.formatMessage(messages.rank)}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-400 sm:px-6 sm:py-3">
                   {intl.formatMessage(messages.user)}
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">
+                <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-400 sm:px-6 sm:py-3">
                   {intl.formatMessage(messages.value)}
                 </th>
               </tr>
@@ -161,15 +162,15 @@ const Leaderboard = () => {
                   key={entry.user.id}
                   className="transition-colors hover:bg-gray-700"
                 >
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-6 sm:py-4">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
                       {entry.rank <= 3 && (
                         <TrophyIcon
-                          className={`h-5 w-5 ${getRankColor(entry.rank)}`}
+                          className={`h-4 w-4 sm:h-5 sm:w-5 ${getRankColor(entry.rank)}`}
                         />
                       )}
                       <span
-                        className={`text-lg font-bold ${getRankColor(
+                        className={`text-base font-bold sm:text-lg ${getRankColor(
                           entry.rank
                         )}`}
                       >
@@ -177,27 +178,28 @@ const Leaderboard = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4">
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-6 sm:py-4">
                     <Link
                       href={`/users/${entry.user.id}`}
-                      className="flex items-center space-x-3 hover:text-indigo-400"
+                      className="flex items-center space-x-2 hover:text-indigo-400 sm:space-x-3"
                     >
                       <img
-                        src={
-                          entry.user.avatar
-                            ? `/api/v1${entry.user.avatar}`
-                            : '/avatars/default.png'
-                        }
+                        src={entry.user.avatar || '/avatars/default.png'}
                         alt={entry.user.displayName}
-                        className="h-10 w-10 rounded-full"
+                        className="h-8 w-8 rounded-full sm:h-10 sm:w-10"
                       />
-                      <span className="font-medium text-white">
-                        {entry.user.displayName}
-                      </span>
+                      <div className="flex flex-col">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <span className="text-sm font-medium text-white sm:text-base">
+                            {entry.user.displayName}
+                          </span>
+                          <UserBadgeDisplay userId={entry.user.id} limit={2} size="sm" />
+                        </div>
+                      </div>
                     </Link>
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right">
-                    <span className="text-lg font-semibold text-indigo-400">
+                  <td className="whitespace-nowrap px-3 py-3 text-right sm:px-6 sm:py-4">
+                    <span className="text-base font-semibold text-indigo-400 sm:text-lg">
                       {entry.value}
                     </span>
                   </td>

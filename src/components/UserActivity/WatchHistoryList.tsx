@@ -1,18 +1,13 @@
-import RewatchBadge from '@app/components/ActivityDashboard/RewatchBadge';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import type { WatchHistoryResponse } from '@app/hooks/useTracking';
 import defineMessages from '@app/utils/defineMessages';
 import { FilmIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useMemo } from 'react';
 import { useIntl } from 'react-intl';
+import ActivityItem from './ActivityItem';
 
 const messages = defineMessages('components.UserActivity', {
-  watchedOn: 'Watched on {date}',
   noWatchHistory: 'No watch history yet',
-  season: 'S{season}',
-  episode: 'E{episode}',
 });
 
 interface WatchHistoryListProps {
@@ -49,82 +44,45 @@ const WatchHistoryList = ({ data, isLoading }: WatchHistoryListProps) => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!data || data.results.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-        <FilmIcon className="mb-4 h-16 w-16" />
-        <p>{intl.formatMessage(messages.noWatchHistory)}</p>
+      <div className="flex w-full flex-col items-center justify-center py-24 text-white">
+        <FilmIcon className="mb-4 h-16 w-16 text-gray-400" />
+        <span className="text-2xl text-gray-400">
+          {intl.formatMessage(messages.noWatchHistory)}
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {data.results.map((watch) => {
         const watchCount = getWatchCount(watch);
         return (
-          <div
+          <ActivityItem
             key={watch.id}
-            className="hover:bg-gray-750 flex items-center space-x-4 rounded-lg bg-gray-800 p-4 transition-colors"
-          >
-            {watch.media?.posterPath && (
-              <div className="relative h-24 w-16 flex-shrink-0">
-                <Image
-                  src={`https://image.tmdb.org/t/p/w92${watch.media.posterPath}`}
-                  alt={watch.media.title || ''}
-                  fill
-                  className="rounded object-cover"
-                  sizes="64px"
-                />
-              </div>
-            )}
-            <div className="flex-1">
-              <div className="flex items-center space-x-2">
-                <Link
-                  href={`/${watch.mediaType === 'movie' ? 'movie' : 'tv'}/${
-                    watch.media?.tmdbId
-                  }`}
-                  className="text-lg font-medium text-white hover:text-indigo-400"
-                >
-                  {watch.media?.title ||
-                    `${watch.mediaType === 'movie' ? 'Movie' : 'TV Show'} #${
-                      watch.media?.tmdbId
-                    }`}
-                </Link>
-                <RewatchBadge watchCount={watchCount} />
-              </div>
-              {watch.seasonNumber !== undefined && (
-                <p className="text-sm text-gray-400">
-                  {intl.formatMessage(messages.season, {
-                    season: watch.seasonNumber,
-                  })}{' '}
-                  {watch.episodeNumber !== undefined &&
-                    intl.formatMessage(messages.episode, {
-                      episode: watch.episodeNumber,
-                    })}
-                </p>
-              )}
-              <p className="text-sm text-gray-500">
-                {intl.formatMessage(messages.watchedOn, {
-                  date: new Date(watch.watchedAt).toLocaleDateString(
-                    intl.locale,
-                    {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    }
-                  ),
-                })}
-              </p>
-            </div>
-          </div>
+            type="watch"
+            media={
+              watch.media
+                ? {
+                    id: watch.media.id,
+                    tmdbId: watch.media.tmdbId,
+                    mediaType: watch.media.mediaType as 'movie' | 'tv',
+                    title: watch.media.title,
+                    posterPath: watch.media.posterPath,
+                    backdropPath: watch.media.backdropPath,
+                  }
+                : undefined
+            }
+            timestamp={new Date(watch.watchedAt)}
+            seasonNumber={watch.seasonNumber}
+            episodeNumber={watch.episodeNumber}
+            watchCount={watchCount}
+          />
         );
       })}
     </div>
