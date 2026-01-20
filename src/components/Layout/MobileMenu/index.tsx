@@ -6,14 +6,13 @@ import { Permission, useUser } from '@app/hooks/useUser';
 import { Transition } from '@headlessui/react';
 import {
   CalendarIcon,
-  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
   ClockIcon,
   CogIcon,
   EllipsisHorizontalIcon,
   ExclamationTriangleIcon,
   EyeSlashIcon,
   FilmIcon,
-  RectangleStackIcon,
   SparklesIcon,
   TrashIcon,
   TvIcon,
@@ -21,13 +20,12 @@ import {
 } from '@heroicons/react/24/outline';
 import {
   CalendarIcon as FilledCalendarIcon,
-  ChatBubbleLeftRightIcon as FilledChatBubbleLeftRightIcon,
+  ChartBarIcon as FilledChartBarIcon,
   ClockIcon as FilledClockIcon,
   CogIcon as FilledCogIcon,
   ExclamationTriangleIcon as FilledExclamationTriangleIcon,
   EyeSlashIcon as FilledEyeSlashIcon,
   FilmIcon as FilledFilmIcon,
-  RectangleStackIcon as FilledRectangleStackIcon,
   SparklesIcon as FilledSparklesIcon,
   TrashIcon as FilledTrashIcon,
   TvIcon as FilledTvIcon,
@@ -83,7 +81,7 @@ const MobileMenu = ({
   const menuLinks: MenuLink[] = [
     {
       href: '/',
-      content: intl.formatMessage(menuMessages.dashboard),
+      content: intl.formatMessage(menuMessages.discover),
       svgIcon: <SparklesIcon className="h-6 w-6" />,
       svgIconSelected: <FilledSparklesIcon className="h-6 w-6" />,
       activeRegExp: /^\/(discover\/?)?$/,
@@ -110,18 +108,11 @@ const MobileMenu = ({
       activeRegExp: /^\/calendar/,
     },
     {
-      href: '/activity',
-      content: intl.formatMessage(menuMessages.activity),
-      svgIcon: <RectangleStackIcon className="h-6 w-6" />,
-      svgIconSelected: <FilledRectangleStackIcon className="h-6 w-6" />,
-      activeRegExp: /^\/activity|^\/users\/[^/]+\/activity/,
-    },
-    {
-      href: '/reviews',
-      content: intl.formatMessage(menuMessages.reviews),
-      svgIcon: <ChatBubbleLeftRightIcon className="h-6 w-6" />,
-      svgIconSelected: <FilledChatBubbleLeftRightIcon className="h-6 w-6" />,
-      activeRegExp: /^\/reviews/,
+      href: '/tracking',
+      content: intl.formatMessage(menuMessages.tracking),
+      svgIcon: <ChartBarIcon className="h-6 w-6" />,
+      svgIconSelected: <FilledChartBarIcon className="h-6 w-6" />,
+      activeRegExp: /^\/tracking|^\/activity|^\/community|^\/users\/[^/]+\/activity/,
     },
     {
       href: '/requests',
@@ -167,7 +158,7 @@ const MobileMenu = ({
       content: intl.formatMessage(menuMessages.users),
       svgIcon: <UsersIcon className="mr-3 h-6 w-6" />,
       svgIconSelected: <FilledUsersIcon className="mr-3 h-6 w-6" />,
-      activeRegExp: /^\/users/,
+      activeRegExp: /^\/users(\/\d+)?$/,
       requiredPermission: Permission.MANAGE_USERS,
       dataTestId: 'sidebar-menu-users',
     },

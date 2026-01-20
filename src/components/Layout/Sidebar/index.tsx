@@ -8,17 +8,15 @@ import defineMessages from '@app/utils/defineMessages';
 import { Transition } from '@headlessui/react';
 import {
   CalendarIcon,
-  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
   ClockIcon,
   CogIcon,
   ExclamationTriangleIcon,
   EyeSlashIcon,
   FilmIcon,
-  RectangleStackIcon,
   SparklesIcon,
   TrashIcon,
   TvIcon,
-  UserGroupIcon,
   UsersIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -29,14 +27,12 @@ import { Fragment, useEffect, useRef } from 'react';
 import { useIntl } from 'react-intl';
 
 export const menuMessages = defineMessages('components.Layout.Sidebar', {
-  dashboard: 'Discover',
+  discover: 'Discover',
   browsemovies: 'Movies',
   browsetv: 'Series',
   calendar: 'Calendar',
   available: 'Available',
-  activity: 'My Activity',
-  reviews: 'Reviews',
-  community: 'Community',
+  tracking: 'Tracking',
   requests: 'Requests',
   deletionrequests: 'Removals',
   blacklist: 'Blacklist',
@@ -68,7 +64,7 @@ interface SidebarLinkProps {
 const SidebarLinks: SidebarLinkProps[] = [
   {
     href: '/',
-    messagesKey: 'dashboard',
+    messagesKey: 'discover',
     svgIcon: <SparklesIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/(discover\/?)?$/,
   },
@@ -91,22 +87,10 @@ const SidebarLinks: SidebarLinkProps[] = [
     activeRegExp: /^\/calendar/,
   },
   {
-    href: '/activity',
-    messagesKey: 'activity',
-    svgIcon: <RectangleStackIcon className="mr-3 h-6 w-6" />,
-    activeRegExp: /^\/activity|^\/users\/[^/]+\/activity/,
-  },
-  {
-    href: '/reviews',
-    messagesKey: 'reviews',
-    svgIcon: <ChatBubbleLeftRightIcon className="mr-3 h-6 w-6" />,
-    activeRegExp: /^\/reviews/,
-  },
-  {
-    href: '/community',
-    messagesKey: 'community',
-    svgIcon: <UserGroupIcon className="mr-3 h-6 w-6" />,
-    activeRegExp: /^\/community/,
+    href: '/tracking',
+    messagesKey: 'tracking',
+    svgIcon: <ChartBarIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/tracking|^\/activity|^\/community|^\/users\/[^/]+\/activity/,
   },
   {
     href: '/requests',
@@ -147,7 +131,7 @@ const SidebarLinks: SidebarLinkProps[] = [
     href: '/users',
     messagesKey: 'users',
     svgIcon: <UsersIcon className="mr-3 h-6 w-6" />,
-    activeRegExp: /^\/users/,
+    activeRegExp: /^\/users(\/\d+)?$/,
     requiredPermission: Permission.MANAGE_USERS,
     dataTestId: 'sidebar-menu-users',
   },
