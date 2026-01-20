@@ -7,7 +7,7 @@ import { useLockBodyScroll } from '@app/hooks/useLockBodyScroll';
 import globalMessages from '@app/i18n/globalMessages';
 import { Transition } from '@headlessui/react';
 import type { MouseEvent } from 'react';
-import React, { Fragment, useEffect, useRef } from 'react';
+import React, { Fragment, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useIntl } from 'react-intl';
 
@@ -39,6 +39,7 @@ interface ModalProps {
   backdrop?: string;
   children?: React.ReactNode;
   dialogClass?: string;
+  show?: boolean;
 }
 
 const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
@@ -71,11 +72,18 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
       cancelButtonProps,
       secondaryButtonProps,
       tertiaryButtonProps,
+      show = true,
     },
     parentRef
   ) => {
     const intl = useIntl();
     const modalRef = useRef<HTMLDivElement>(null);
+    const [isVisible, setIsVisible] = useState(show);
+
+    useEffect(() => {
+      setIsVisible(show);
+    }, [show]);
+
     const backgroundClickableRef = useRef(backgroundClickable); // This ref is used to detect state change inside the useClickOutside hook
     useEffect(() => {
       backgroundClickableRef.current = backgroundClickable;
@@ -85,10 +93,16 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
         onCancel();
       }
     });
-    useLockBodyScroll(true, disableScrollLock);
+    useLockBodyScroll(isVisible, disableScrollLock);
+
+    // Don't render portal during SSR
+    if (typeof window === 'undefined') {
+      return null;
+    }
 
     return ReactDOM.createPortal(
-      <Transition.Child
+      <Transition show={isVisible} as={Fragment}>
+        <Transition.Child
         appear
         as="div"
         className="fixed top-0 bottom-0 left-0 right-0 z-50 flex h-full w-full items-center justify-center bg-gray-800 bg-opacity-70"
@@ -243,7 +257,8 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
             </div>
           )}
         </Transition>
-      </Transition.Child>,
+      </Transition.Child>
+      </Transition>,
       document.body
     );
   }

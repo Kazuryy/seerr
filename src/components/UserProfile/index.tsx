@@ -2,6 +2,8 @@ import ImageFader from '@app/components/Common/ImageFader';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import PageTitle from '@app/components/Common/PageTitle';
 import ProgressCircle from '@app/components/Common/ProgressCircle';
+import ActivityChart from '@app/components/Dashboard/ActivityChart';
+import StreakWidget from '@app/components/Dashboard/StreakWidget';
 import RequestCard from '@app/components/RequestCard';
 import Slider from '@app/components/Slider';
 import TmdbTitleCard from '@app/components/TitleCard/TmdbTitleCard';
@@ -145,6 +147,17 @@ const UserProfile = () => {
         </div>
       )}
       <ProfileHeader user={user} />
+
+      {/* Activity Chart and Streak */}
+      <div className="relative z-40 mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ActivityChart userId={user.id} />
+        </div>
+        <div>
+          <StreakWidget userId={user.id} />
+        </div>
+      </div>
+
       {quota &&
         (user.id === currentUser?.id ||
           currentHasPermission(

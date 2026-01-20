@@ -24,6 +24,7 @@ export interface Review {
     mediaType?: string;
     title?: string;
     posterPath?: string;
+    backdropPath?: string;
   };
 }
 
@@ -101,11 +102,13 @@ export const useReviews = (
 
 /**
  * Hook to fetch the current user's review for a specific media item
- * @param mediaId - The media ID
+ * @param tmdbId - The TMDB ID of the media
+ * @param mediaType - The media type ('movie' or 'tv')
  * @param seasonNumber - Optional season number for TV shows
  */
 export const useMyReview = (
-  mediaId?: number,
+  tmdbId?: number,
+  mediaType?: MediaType,
   seasonNumber?: number
 ): {
   data?: Review;
@@ -114,16 +117,20 @@ export const useMyReview = (
   mutate: () => void;
 } => {
   const params = new URLSearchParams();
+  if (mediaType) {
+    params.append('mediaType', mediaType);
+  }
   if (seasonNumber !== undefined) {
     params.append('seasonNumber', seasonNumber.toString());
   }
 
   const queryString = params.toString();
-  const endpoint = mediaId
-    ? `/api/v1/tracking/reviews/${mediaId}/me${
-        queryString ? `?${queryString}` : ''
-      }`
-    : null;
+  const endpoint =
+    tmdbId && mediaType
+      ? `/api/v1/tracking/reviews/${tmdbId}/me${
+          queryString ? `?${queryString}` : ''
+        }`
+      : null;
 
   const { data, error, mutate } = useSWR<Review>(endpoint, {
     revalidateOnFocus: false,

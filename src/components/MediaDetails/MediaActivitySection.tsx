@@ -1,8 +1,5 @@
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
-import {
-  MarkAsWatchedButton,
-  ReviewButton,
-} from '@app/components/TrackingButtons';
+import { ReviewButton } from '@app/components/TrackingButtons';
 import { useMediaActivity } from '@app/hooks/useMediaActivity';
 import type { MediaType } from '@app/hooks/useWatchHistory';
 import defineMessages from '@app/utils/defineMessages';
@@ -138,8 +135,7 @@ const MediaActivitySection = ({
 
               {/* Action buttons */}
               <div className="flex space-x-2 pt-2">
-                <MarkAsWatchedButton mediaId={tmdbId} mediaType={mediaType} />
-                <ReviewButton mediaId={tmdbId} mediaType={mediaType} />
+                <ReviewButton tmdbId={tmdbId} mediaType={mediaType} />
                 <Link
                   href="/activity?tab=watch"
                   className="text-sm text-indigo-400 hover:text-indigo-300"
@@ -154,8 +150,7 @@ const MediaActivitySection = ({
                 {intl.formatMessage(messages.notWatchedYet)}
               </p>
               <div className="flex space-x-2">
-                <MarkAsWatchedButton mediaId={tmdbId} mediaType={mediaType} />
-                <ReviewButton mediaId={tmdbId} mediaType={mediaType} />
+                <ReviewButton tmdbId={tmdbId} mediaType={mediaType} />
               </div>
             </div>
           )}

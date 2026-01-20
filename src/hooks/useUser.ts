@@ -24,6 +24,7 @@ export interface User {
   updatedAt: Date;
   requestCount: number;
   settings?: UserSettings;
+  allowManualWatchTracking?: boolean;
 }
 
 type NotificationAgentTypes = Record<NotificationAgentKey, number>;

@@ -10,7 +10,8 @@ import { useToasts } from 'react-toast-notifications';
 
 interface ReviewModalProps {
   show: boolean;
-  mediaId: number;
+  mediaId?: number; // Internal media ID (optional)
+  tmdbId?: number; // TMDB ID for creating media if not exists
   mediaType: MediaType;
   title?: string;
   seasonNumber?: number;
@@ -40,6 +41,7 @@ const messages = defineMessages('components.ReviewModal', {
 const ReviewModal = ({
   show,
   mediaId,
+  tmdbId,
   mediaType,
   title = '',
   seasonNumber,
@@ -49,7 +51,11 @@ const ReviewModal = ({
 }: ReviewModalProps) => {
   const intl = useIntl();
   const { addToast } = useToasts();
-  const { data: existingReview } = useMyReview(mediaId, seasonNumber);
+  const { data: existingReview } = useMyReview(
+    tmdbId,
+    mediaType as 'movie' | 'tv',
+    seasonNumber
+  );
   const { createOrUpdateReview, isLoading } = useCreateReview();
 
   const [rating, setRating] = useState<number | undefined>(undefined);
@@ -87,7 +93,8 @@ const ReviewModal = ({
 
     try {
       await createOrUpdateReview({
-        mediaId,
+        ...(mediaId ? { mediaId } : {}),
+        tmdbId,
         mediaType: mediaType === 'movie' ? 'movie' : 'tv',
         seasonNumber,
         episodeNumber,

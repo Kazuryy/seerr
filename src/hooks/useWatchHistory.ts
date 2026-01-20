@@ -18,6 +18,7 @@ export interface WatchHistoryItem {
     mediaType: string;
     title?: string;
     posterPath?: string;
+    backdropPath?: string;
   };
 }
 

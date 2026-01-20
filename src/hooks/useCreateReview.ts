@@ -4,7 +4,8 @@ import type { Review } from './useReviews';
 import type { MediaType } from './useWatchHistory';
 
 interface CreateReviewParams {
-  mediaId: number;
+  mediaId?: number; // Internal media ID (optional, use tmdbId instead)
+  tmdbId?: number; // TMDB ID for creating media if not exists (preferred)
   mediaType: MediaType;
   seasonNumber?: number;
   episodeNumber?: number;

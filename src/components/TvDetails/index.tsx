@@ -27,11 +27,7 @@ import RequestButton from '@app/components/RequestButton';
 import RequestModal from '@app/components/RequestModal';
 import Slider from '@app/components/Slider';
 import StatusBadge from '@app/components/StatusBadge';
-import {
-  MarkAsWatchedButton,
-  ReviewButton,
-} from '@app/components/TrackingButtons';
-import BatchMarkSeasonButton from '@app/components/TvDetails/BatchMarkSeasonButton';
+import { ReviewButton } from '@app/components/TrackingButtons';
 import Season from '@app/components/TvDetails/Season';
 import useDeepLinks from '@app/hooks/useDeepLinks';
 import { MediaType as DeletionMediaType } from '@app/hooks/useDeletionRequests';
@@ -665,14 +661,9 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                 )}
               </>
             )}
-          <MarkAsWatchedButton
-            mediaId={data.mediaInfo?.id ?? 0}
-            mediaType="tv"
-            title={data.name}
-            onUpdate={() => revalidate()}
-          />
           <ReviewButton
             mediaId={data.mediaInfo?.id ?? 0}
+            tmdbId={data.id}
             mediaType="tv"
             title={data.name}
             onUpdate={() => revalidate()}
@@ -895,25 +886,6 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                                 episodeCount: season.episodeCount,
                               })}
                             </Badge>
-                            {data.mediaInfo?.id && season.episodeCount > 0 && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.stopPropagation();
-                                  }
-                                }}
-                                role="button"
-                                tabIndex={0}
-                              >
-                                <BatchMarkSeasonButton
-                                  mediaId={data.mediaInfo.id}
-                                  seasonNumber={season.seasonNumber}
-                                  episodeCount={season.episodeCount}
-                                  onUpdate={() => revalidate()}
-                                />
-                              </div>
-                            )}
                           </div>
                           {((!mSeason &&
                             request?.status === MediaRequestStatus.APPROVED) ||
