@@ -95,6 +95,7 @@
     "react-transition-group": "^4.4.5",
     "react-truncate-markup": "5.1.2",
     "react-use-clipboard": "1.0.9",
+    "recharts": "^3.6.0",
     "reflect-metadata": "0.1.13",
     "secure-random-password": "0.2.3",
     "semver": "7.7.3",
