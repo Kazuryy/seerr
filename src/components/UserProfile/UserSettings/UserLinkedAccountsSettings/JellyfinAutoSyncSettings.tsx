@@ -19,12 +19,6 @@ const messages = defineMessages(
     enabled: 'Enable Auto-Sync',
     enabledDescription:
       'When enabled, your Jellyfin watch activity will be automatically synced.',
-    threshold: 'Completion Threshold',
-    thresholdDescription:
-      'Percentage of media that must be watched before it counts as completed. Default: 85%',
-    minWatchTime: 'Minimum Watch Time',
-    minWatchTimeDescription:
-      'Minimum seconds you must watch before it counts. Helps avoid tracking skips. Default: 120 seconds',
     notLinked:
       'You must link your Jellyfin account before enabling auto-sync.',
     saveSuccess: 'Auto-sync settings saved successfully.',
@@ -36,8 +30,6 @@ const messages = defineMessages(
 
 interface AutoSyncSettings {
   enabled: boolean;
-  threshold: number;
-  minSeconds: number;
   isLinked: boolean;
 }
 
@@ -56,8 +48,6 @@ const JellyfinAutoSyncSettings = () => {
   );
 
   const [localEnabled, setLocalEnabled] = useState<boolean | null>(null);
-  const [localThreshold, setLocalThreshold] = useState<number | null>(null);
-  const [localMinSeconds, setLocalMinSeconds] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{
     type: 'info' | 'error';
@@ -73,13 +63,8 @@ const JellyfinAutoSyncSettings = () => {
   }
 
   const enabled = localEnabled ?? settings?.enabled ?? false;
-  const threshold = localThreshold ?? settings?.threshold ?? 85;
-  const minSeconds = localMinSeconds ?? settings?.minSeconds ?? 120;
 
-  const hasChanges =
-    enabled !== settings?.enabled ||
-    threshold !== settings?.threshold ||
-    minSeconds !== settings?.minSeconds;
+  const hasChanges = enabled !== settings?.enabled;
 
   const handleSave = async () => {
     setSaving(true);
@@ -88,16 +73,12 @@ const JellyfinAutoSyncSettings = () => {
     try {
       await axios.post(`/api/v1/user/${user?.id}/settings/jellyfin-autosync`, {
         enabled,
-        threshold,
-        minSeconds,
       });
 
       await mutate();
 
       // Reset local state
       setLocalEnabled(null);
-      setLocalThreshold(null);
-      setLocalMinSeconds(null);
 
       setSaveMessage({
         type: 'info',
@@ -163,59 +144,6 @@ const JellyfinAutoSyncSettings = () => {
               </span>
             </label>
           </div>
-
-          {enabled && (
-            <>
-              {/* Threshold Slider */}
-              <div className="rounded-lg bg-gray-800 bg-opacity-50 p-4">
-                <div className="mb-2">
-                  <div className="font-medium text-white">
-                    {intl.formatMessage(messages.threshold)}: {threshold}%
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    {intl.formatMessage(messages.thresholdDescription)}
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min="50"
-                  max="100"
-                  value={threshold}
-                  onChange={(e) => setLocalThreshold(Number(e.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700 accent-indigo-600"
-                />
-                <div className="mt-1 flex justify-between text-xs text-gray-500">
-                  <span>50%</span>
-                  <span>100%</span>
-                </div>
-              </div>
-
-              {/* Min Watch Time Slider */}
-              <div className="rounded-lg bg-gray-800 bg-opacity-50 p-4">
-                <div className="mb-2">
-                  <div className="font-medium text-white">
-                    {intl.formatMessage(messages.minWatchTime)}: {minSeconds}s
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    {intl.formatMessage(messages.minWatchTimeDescription)}
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="600"
-                  step="30"
-                  value={minSeconds}
-                  onChange={(e) => setLocalMinSeconds(Number(e.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700 accent-indigo-600"
-                />
-                <div className="mt-1 flex justify-between text-xs text-gray-500">
-                  <span>0s</span>
-                  <span>10min</span>
-                </div>
-              </div>
-            </>
-          )}
 
           {/* Save Button */}
           {hasChanges && (

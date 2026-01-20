@@ -160,8 +160,9 @@ class JellyfinActivityMonitor {
       for (const user of linkedUsers) {
         this.userSyncSettings.set(user.id, {
           enabled: user.jellyfinAutoSyncEnabled,
-          completionThreshold: user.jellyfinAutoSyncThreshold || DEFAULT_COMPLETION_THRESHOLD,
-          minWatchSeconds: user.jellyfinAutoSyncMinSeconds || DEFAULT_MIN_WATCH_SECONDS,
+          // Use global defaults - only admin can change these
+          completionThreshold: DEFAULT_COMPLETION_THRESHOLD,
+          minWatchSeconds: DEFAULT_MIN_WATCH_SECONDS,
         });
       }
 
