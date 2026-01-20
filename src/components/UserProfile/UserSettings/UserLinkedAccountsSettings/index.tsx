@@ -17,6 +17,7 @@ import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import useSWR from 'swr';
+import JellyfinAutoSyncSettings from './JellyfinAutoSyncSettings';
 import LinkJellyfinModal from './LinkJellyfinModal';
 
 const messages = defineMessages(
@@ -264,6 +265,12 @@ const UserLinkedAccountsSettings = () => {
           revalidateUser();
         }}
       />
+
+      {/* Show Jellyfin Auto-Sync settings only for Jellyfin/Emby users */}
+      {(settings.currentSettings.mediaServerType === MediaServerType.JELLYFIN ||
+        settings.currentSettings.mediaServerType === MediaServerType.EMBY) && (
+        <JellyfinAutoSyncSettings />
+      )}
     </>
   );
 };

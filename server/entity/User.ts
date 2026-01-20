@@ -30,6 +30,7 @@ import { MediaReview } from './MediaReview';
 import { ReviewComment } from './ReviewComment';
 import { ReviewLike } from './ReviewLike';
 import SeasonRequest from './SeasonRequest';
+import { UserBadge } from './UserBadge';
 import { UserPushSubscription } from './UserPushSubscription';
 import { UserSettings } from './UserSettings';
 import { WatchHistory } from './WatchHistory';
@@ -92,6 +93,19 @@ export class User {
   @Column({ type: 'varchar', nullable: true, select: false })
   public jellyfinAuthToken?: string | null;
 
+  // Jellyfin Auto-Sync Settings
+  @Column({ type: 'boolean', default: false })
+  public jellyfinAutoSyncEnabled: boolean;
+
+  @Column({ type: 'integer', default: 85 })
+  public jellyfinAutoSyncThreshold: number; // % watched to count as complete
+
+  @Column({ type: 'integer', default: 120 })
+  public jellyfinAutoSyncMinSeconds: number; // Minimum watch time in seconds
+
+  @Column({ type: 'boolean', default: false })
+  public allowManualWatchTracking: boolean; // Allow user to manually mark media as watched
+
   @Column({ type: 'varchar', nullable: true, select: false })
   public plexToken?: string | null;
 
@@ -152,6 +166,9 @@ export class User {
 
   @OneToMany(() => ReviewComment, (comment) => comment.user)
   public reviewComments: ReviewComment[];
+
+  @OneToMany(() => UserBadge, (badge) => badge.user)
+  public badges: UserBadge[];
 
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;

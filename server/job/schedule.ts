@@ -5,6 +5,7 @@ import deletionVoteProcessor from '@server/job/deletionVoteProcessor';
 import availabilitySync from '@server/lib/availabilitySync';
 import downloadTracker from '@server/lib/downloadtracker';
 import ImageProxy from '@server/lib/imageproxy';
+import jellyfinActivityMonitor from '@server/lib/jellyfinActivityMonitor';
 import refreshToken from '@server/lib/refreshToken';
 import {
   jellyfinFullScanner,
@@ -141,6 +142,14 @@ export const startJobs = (): void => {
       }),
       running: () => jellyfinFullScanner.status().running,
       cancelFn: () => jellyfinFullScanner.cancel(),
+    });
+
+    // Start Jellyfin Activity Monitor for auto-sync watch history
+    jellyfinActivityMonitor.start().catch((error) => {
+      logger.error('Failed to start Jellyfin Activity Monitor', {
+        label: 'Jobs',
+        error: error.message,
+      });
     });
   }
 

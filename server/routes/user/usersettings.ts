@@ -10,6 +10,7 @@ import type {
   UserSettingsGeneralResponse,
   UserSettingsNotificationsResponse,
 } from '@server/interfaces/api/userSettingsInterfaces';
+import jellyfinActivityMonitor from '@server/lib/jellyfinActivityMonitor';
 import { Permission } from '@server/lib/permissions';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
@@ -727,5 +728,130 @@ userSettingsRoutes.post<
     }
   }
 );
+
+// Jellyfin Auto-Sync Settings
+interface JellyfinAutoSyncSettings {
+  enabled: boolean;
+  threshold: number;
+  minSeconds: number;
+  isLinked: boolean;
+}
+
+userSettingsRoutes.get<{ id: string }, JellyfinAutoSyncSettings>(
+  '/jellyfin-autosync',
+  isOwnProfileOrAdmin(),
+  async (req, res, next) => {
+    const userRepository = getRepository(User);
+
+    try {
+      const user = await userRepository.findOne({
+        where: { id: Number(req.params.id) },
+      });
+
+      if (!user) {
+        return next({ status: 404, message: 'User not found.' });
+      }
+
+      return res.status(200).json({
+        enabled: user.jellyfinAutoSyncEnabled,
+        threshold: user.jellyfinAutoSyncThreshold,
+        minSeconds: user.jellyfinAutoSyncMinSeconds,
+        isLinked: !!user.jellyfinUserId,
+      });
+    } catch (e) {
+      next({ status: 500, message: e.message });
+    }
+  }
+);
+
+userSettingsRoutes.post<
+  { id: string },
+  JellyfinAutoSyncSettings,
+  { enabled?: boolean; threshold?: number; minSeconds?: number }
+>('/jellyfin-autosync', isOwnProfileOrAdmin(), async (req, res, next) => {
+  const userRepository = getRepository(User);
+
+  try {
+    const user = await userRepository.findOne({
+      where: { id: Number(req.params.id) },
+    });
+
+    if (!user) {
+      return next({ status: 404, message: 'User not found.' });
+    }
+
+    // User must have Jellyfin account linked to enable auto-sync
+    if (req.body.enabled && !user.jellyfinUserId) {
+      return next({
+        status: 400,
+        message:
+          'You must link your Jellyfin account before enabling auto-sync.',
+      });
+    }
+
+    // Validate threshold (1-100)
+    if (
+      req.body.threshold !== undefined &&
+      (req.body.threshold < 1 || req.body.threshold > 100)
+    ) {
+      return next({
+        status: 400,
+        message: 'Threshold must be between 1 and 100.',
+      });
+    }
+
+    // Validate minSeconds (0-3600)
+    if (
+      req.body.minSeconds !== undefined &&
+      (req.body.minSeconds < 0 || req.body.minSeconds > 3600)
+    ) {
+      return next({
+        status: 400,
+        message: 'Minimum seconds must be between 0 and 3600.',
+      });
+    }
+
+    // Update settings
+    if (req.body.enabled !== undefined) {
+      user.jellyfinAutoSyncEnabled = req.body.enabled;
+    }
+    if (req.body.threshold !== undefined) {
+      user.jellyfinAutoSyncThreshold = req.body.threshold;
+    }
+    if (req.body.minSeconds !== undefined) {
+      user.jellyfinAutoSyncMinSeconds = req.body.minSeconds;
+    }
+
+    await userRepository.save(user);
+
+    // Reload activity monitor settings so changes take effect immediately
+    if (jellyfinActivityMonitor.isActive()) {
+      jellyfinActivityMonitor.loadUserSyncSettings().catch((error) => {
+        logger.error('Failed to reload activity monitor settings', {
+          label: 'User Settings',
+          error: error.message,
+        });
+      });
+    }
+
+    logger.info(
+      `Updated Jellyfin auto-sync settings for user ${user.displayName}`,
+      {
+        label: 'User Settings',
+        userId: user.id,
+        enabled: user.jellyfinAutoSyncEnabled,
+      }
+    );
+
+    return res.status(200).json({
+      enabled: user.jellyfinAutoSyncEnabled,
+      threshold: user.jellyfinAutoSyncThreshold,
+      minSeconds: user.jellyfinAutoSyncMinSeconds,
+      isLinked: !!user.jellyfinUserId,
+    });
+  } catch (e) {
+    next({ status: 500, message: e.message });
+  }
+});
 
 export default userSettingsRoutes;
