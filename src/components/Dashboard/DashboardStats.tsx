@@ -68,7 +68,7 @@ const DashboardStats = ({ userId }: DashboardStatsProps) => {
     {
       label: messages.averageRating,
       value:
-        stats?.reviewStats?.averageRating !== undefined
+        stats?.reviewStats?.averageRating != null
           ? `${stats.reviewStats.averageRating.toFixed(1)}/10`
           : '-',
       icon: StarIcon,
