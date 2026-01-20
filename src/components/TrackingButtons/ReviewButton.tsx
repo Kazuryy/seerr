@@ -1,16 +1,17 @@
+import Button from '@app/components/Common/Button';
 import Tooltip from '@app/components/Common/Tooltip';
 import ReviewModal from '@app/components/ReviewModal';
 import { useMyReview } from '@app/hooks/useTracking';
 import { useUser } from '@app/hooks/useUser';
 import defineMessages from '@app/utils/defineMessages';
-import { PencilIcon } from '@heroicons/react/24/outline';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import type { MediaType } from '@server/models/Search';
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
 
 interface ReviewButtonProps {
-  mediaId: number;
+  mediaId?: number; // Internal media ID (optional, will use tmdbId if not provided)
+  tmdbId?: number; // TMDB ID for creating media if not exists
   mediaType: MediaType;
   title?: string;
   seasonNumber?: number;
@@ -25,6 +26,7 @@ const messages = defineMessages('components.TrackingButtons', {
 
 const ReviewButton = ({
   mediaId,
+  tmdbId,
   mediaType,
   title,
   seasonNumber,
@@ -33,7 +35,11 @@ const ReviewButton = ({
 }: ReviewButtonProps) => {
   const intl = useIntl();
   const { user } = useUser();
-  const { data: myReview, mutate } = useMyReview(mediaId, seasonNumber);
+  const { data: myReview, mutate } = useMyReview(
+    tmdbId,
+    mediaType as 'movie' | 'tv',
+    seasonNumber
+  );
   const [showModal, setShowModal] = useState(false);
 
   if (!user) {
@@ -56,32 +62,22 @@ const ReviewButton = ({
           hasReview ? messages.editReview : messages.writeReview
         )}
       >
-        <button
+        <Button
           onClick={() => setShowModal(true)}
-          className="relative inline-flex h-8 w-8 items-center justify-center rounded-full text-white transition-colors duration-200 hover:bg-gray-600"
-          aria-label={intl.formatMessage(
-            hasReview ? messages.editReview : messages.writeReview
-          )}
+          className="mr-2"
+          buttonType={hasReview ? 'success' : 'ghost'}
         >
-          {hasReview ? (
-            <div className="relative">
-              <StarIcon className="h-5 w-5 text-yellow-500" />
-              <PencilIcon className="absolute -right-1 -bottom-1 h-3 w-3 text-white" />
-            </div>
-          ) : (
-            <PencilIcon className="h-5 w-5" />
-          )}
+          <PencilSquareIcon />
           {hasReview && myReview.rating && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500 text-[10px] font-bold text-gray-900">
-              {myReview.rating}
-            </span>
+            <span className="ml-1 text-sm font-bold">{myReview.rating}/10</span>
           )}
-        </button>
+        </Button>
       </Tooltip>
 
       <ReviewModal
         show={showModal}
         mediaId={mediaId}
+        tmdbId={tmdbId}
         mediaType={mediaType}
         title={title}
         seasonNumber={seasonNumber}
