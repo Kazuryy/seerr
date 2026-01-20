@@ -30,6 +30,7 @@ import { isPerson } from '@server/utils/typeHelpers';
 import { Router } from 'express';
 import authRoutes from './auth';
 import availableRoutes from './available';
+import badgesRoutes from './badges';
 import blacklistRoutes from './blacklist';
 import calendarRoutes from './calendar';
 import collectionRoutes from './collection';
@@ -171,6 +172,7 @@ router.use('/blacklist', isAuthenticated(), blacklistRoutes);
 router.use('/deletion', isAuthenticated(), deletionRoutes);
 router.use('/tracking', isAuthenticated(), trackingRoutes);
 router.use('/community', isAuthenticated(), communityRoutes);
+router.use('/badges', isAuthenticated(), badgesRoutes);
 router.use('/calendar', isAuthenticated(), calendarRoutes);
 
 router.use('/movie', isAuthenticated(), movieRoutes);

@@ -875,6 +875,7 @@ discoverRoutes.get<Record<string, unknown>, WatchlistResponse>(
           /*requestedBy: true,media:true*/
         },
         // loadRelationIds: true,
+        order: { createdAt: 'DESC' },
         take: itemsPerPage,
         skip: offset,
       });

@@ -21,6 +21,12 @@ export interface NotificationPayload {
   comment?: IssueComment;
   pendingRequestsCount?: number;
   isAdmin?: boolean;
+  badge?: {
+    type: string;
+    displayName: string;
+    description: string;
+    icon: string;
+  };
 }
 
 export abstract class BaseAgent<T extends NotificationAgentConfig> {

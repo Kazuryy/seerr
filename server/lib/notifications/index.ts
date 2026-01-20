@@ -21,6 +21,7 @@ export enum Notification {
   MEDIA_DELETION_APPROVED = 16384,
   MEDIA_DELETION_REJECTED = 32768,
   MEDIA_DELETION_COMPLETED = 65536,
+  BADGE_EARNED = 131072,
 }
 
 export const hasNotificationType = (

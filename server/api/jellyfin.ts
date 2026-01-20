@@ -122,6 +122,54 @@ export interface JellyfinItemsReponse {
   StartIndex: number;
 }
 
+// Session/Playback interfaces for activity monitoring
+export interface JellyfinPlayState {
+  PositionTicks: number;
+  CanSeek: boolean;
+  IsPaused: boolean;
+  IsMuted: boolean;
+  VolumeLevel?: number;
+  AudioStreamIndex?: number;
+  SubtitleStreamIndex?: number;
+  MediaSourceId?: string;
+  PlayMethod: 'DirectPlay' | 'DirectStream' | 'Transcode';
+  RepeatMode?: string;
+}
+
+export interface JellyfinNowPlayingItem {
+  Id: string;
+  Name: string;
+  Type: 'Movie' | 'Episode' | 'Series' | 'Audio' | 'Video';
+  RunTimeTicks: number;
+  ProductionYear?: number;
+  IndexNumber?: number; // Episode number
+  ParentIndexNumber?: number; // Season number
+  SeriesId?: string;
+  SeriesName?: string;
+  SeasonId?: string;
+  ProviderIds: {
+    Tmdb?: string;
+    Imdb?: string;
+    Tvdb?: string;
+  };
+}
+
+export interface JellyfinSession {
+  Id: string;
+  UserId: string;
+  UserName: string;
+  Client: string;
+  DeviceId: string;
+  DeviceName: string;
+  ApplicationVersion?: string;
+  RemoteEndPoint?: string;
+  PlayState?: JellyfinPlayState;
+  NowPlayingItem?: JellyfinNowPlayingItem;
+  LastActivityDate: string;
+  LastPlaybackCheckIn?: string;
+  SupportsRemoteControl: boolean;
+}
+
 class JellyfinAPI extends ExternalAPI {
   private userId?: string;
   private mediaServerType: MediaServerType;
@@ -464,6 +512,33 @@ class JellyfinAPI extends ExternalAPI {
       );
 
       throw new ApiError(e.response?.status, ApiErrorCode.InvalidAuthToken);
+    }
+  }
+
+  /**
+   * Get active playback sessions from Jellyfin
+   * Used for activity monitoring and auto-sync
+   */
+  public async getSessions(): Promise<JellyfinSession[]> {
+    try {
+      const sessions = await this.get<JellyfinSession[]>('/Sessions');
+
+      // Filter to only return sessions with active playback
+      // Exclude trailers, prerolls, and other non-media content
+      return sessions.filter((session) => {
+        if (!session.NowPlayingItem) return false;
+
+        const itemType = session.NowPlayingItem.Type;
+        return itemType === 'Movie' || itemType === 'Episode';
+      });
+    } catch (e) {
+      logger.error(
+        `Something went wrong while getting sessions from the Jellyfin server: ${e.message}`,
+        { label: 'Jellyfin API', error: e.response?.status }
+      );
+
+      // Return empty array instead of throwing - activity monitor should continue
+      return [];
     }
   }
 }

@@ -505,6 +505,11 @@ router.put<{ id: string }>(
         permissions: req.body.permissions,
       });
 
+      // Update manual watch tracking permission if provided
+      if (req.body.allowManualWatchTracking !== undefined) {
+        user.allowManualWatchTracking = req.body.allowManualWatchTracking;
+      }
+
       await userRepository.save(user);
 
       return res.status(200).json(user.filter());
@@ -887,6 +892,7 @@ router.get<{ id: string }, WatchlistResponse>(
           /*requestedBy: true,media:true*/
         },
         // loadRelationIds: true,
+        order: { createdAt: 'DESC' },
         take: itemsPerPage,
         skip: offset,
       });
