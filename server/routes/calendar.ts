@@ -88,12 +88,12 @@ calendarRoutes.get<never, CalendarResponse>(
         type,
       });
 
-      // 2. Determine if this is an extended range request (> 90 days from now)
+      // 2. Determine if this is an extended range request (> 180 days from now)
       now.setHours(0, 0, 0, 0);
-      const ninetyDaysFromNow = new Date(now);
-      ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
+      const sixMonthsFromNow = new Date(now);
+      sixMonthsFromNow.setDate(sixMonthsFromNow.getDate() + 180);
 
-      const isExtendedRange = startDate >= ninetyDaysFromNow;
+      const isExtendedRange = startDate >= sixMonthsFromNow;
 
       let cacheItems: CalendarCache[] = [];
 

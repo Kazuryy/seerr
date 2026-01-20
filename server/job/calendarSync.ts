@@ -18,18 +18,21 @@ export const calendarSync = async (): Promise<void> => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    // Sync from today to 90 days in the future
-    const startDate = new Date(now);
-    const endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // +90 days (3 months)
+    // Sync from 60 days ago (2 months) to 180 days in the future (6 months)
+    const startDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000); // -60 days (2 months)
+    const endDate = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // +180 days (6 months)
 
-    logger.info('Starting calendar sync job (90 days)', {
+    logger.info('Starting calendar sync job (2 months past, 6 months future)', {
       label: 'Calendar Sync',
       start: startDate.toISOString(),
       end: endDate.toISOString(),
     });
 
-    // 1. Clear old cache (older than today)
-    const deletedCount = await clearOldCache(now);
+    // 1. Clear old cache (older than 60 days ago)
+    const cacheRetentionDate = new Date(
+      now.getTime() - 60 * 24 * 60 * 60 * 1000
+    );
+    const deletedCount = await clearOldCache(cacheRetentionDate);
     logger.debug(`Cleared ${deletedCount} old calendar entries`, {
       label: 'Calendar Sync',
     });
