@@ -27,10 +27,21 @@ export async function fetchRadarrCalendar(
   // Loop through all configured Radarr servers
   for (const radarrSettings of settings.radarr) {
     try {
+      const radarrUrl = `http${radarrSettings.useSsl ? 's' : ''}://${
+        radarrSettings.hostname
+      }:${radarrSettings.port}${radarrSettings.baseUrl || ''}/api/v3`;
+
+      logger.debug('Connecting to Radarr server for calendar', {
+        label: 'Calendar Sync',
+        server: radarrSettings.hostname,
+        url: radarrUrl,
+        dateRange: `${startDate.toISOString().split('T')[0]} to ${
+          endDate.toISOString().split('T')[0]
+        }`,
+      });
+
       const radarr = new RadarrAPI({
-        url: `http${radarrSettings.useSsl ? 's' : ''}://${
-          radarrSettings.hostname
-        }:${radarrSettings.port}${radarrSettings.baseUrl || ''}/api/v3`,
+        url: radarrUrl,
         apiKey: radarrSettings.apiKey,
       });
 
@@ -69,6 +80,14 @@ export async function fetchRadarrCalendar(
           label: 'Calendar Sync',
           sample: JSON.stringify(calendar[0], null, 2).substring(0, 1000),
         });
+      } else {
+        logger.warn(
+          `Radarr calendar returned 0 movies for range ${startDate.toISOString()} to ${endDate.toISOString()}`,
+          {
+            label: 'Calendar Sync',
+            server: radarrSettings.hostname,
+          }
+        );
       }
 
       // Transform to CalendarCache
@@ -86,19 +105,38 @@ export async function fetchRadarrCalendar(
         const title = movieData.title || 'Unknown';
         const tmdbId = movieData.tmdbId || 0;
 
-        // Determine release date (prefer digital, then physical, then in cinemas)
+        // Helper to parse date - handles both ISO format and YYYY-MM-DD
+        const parseDate = (dateStr: string | undefined): Date | null => {
+          if (!dateStr) return null;
+          // If it already contains time component, parse directly
+          if (dateStr.includes('T')) {
+            return new Date(dateStr);
+          }
+          // Otherwise treat as date-only string
+          return new Date(dateStr + 'T00:00:00.000Z');
+        };
+
+        // Determine release date and type (prefer digital, then physical, then in cinemas)
         let releaseDate: Date | null = null;
+        let releaseType: string | undefined;
+
         if (movieData.digitalRelease) {
-          releaseDate = new Date(movieData.digitalRelease + 'T00:00:00.000Z');
+          releaseDate = parseDate(movieData.digitalRelease);
+          releaseType = 'digital';
         } else if (movieData.physicalRelease) {
-          releaseDate = new Date(movieData.physicalRelease + 'T00:00:00.000Z');
+          releaseDate = parseDate(movieData.physicalRelease);
+          releaseType = 'physical';
         } else if (movieData.inCinemas) {
-          releaseDate = new Date(movieData.inCinemas + 'T00:00:00.000Z');
+          releaseDate = parseDate(movieData.inCinemas);
+          releaseType = 'inCinemas';
         }
 
         if (!releaseDate || isNaN(releaseDate.getTime())) {
           logger.debug(`Skipping movie ${title} - no valid release date`, {
             label: 'Calendar Sync',
+            digitalRelease: movieData.digitalRelease,
+            physicalRelease: movieData.physicalRelease,
+            inCinemas: movieData.inCinemas,
           });
           continue;
         }
@@ -109,6 +147,7 @@ export async function fetchRadarrCalendar(
             tmdbId: tmdbId,
             title: title,
             releaseDate,
+            releaseType,
             overview: movieData.overview || '',
             status: movieData.status || 'announced',
             monitored: movieData.monitored || false,
@@ -274,6 +313,7 @@ export async function fetchSonarrCalendar(
             episodeNumber: episodeData.episodeNumber,
             episodeTitle: episodeData.title,
             releaseDate,
+            releaseType: 'premiere',
             overview: episodeData.overview || '',
             status: episodeData.hasFile ? 'released' : 'announced',
             monitored: episodeData.monitored,

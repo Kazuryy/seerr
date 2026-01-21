@@ -12,6 +12,7 @@ interface CalendarItem {
   episodeNumber?: number;
   episodeTitle?: string;
   releaseDate: string;
+  releaseType?: 'digital' | 'physical' | 'inCinemas' | 'premiere';
   inWatchlist: boolean;
   countdown: number;
   posterPath?: string;
@@ -53,23 +54,38 @@ const CalendarCard: React.FC<CalendarCardProps> = ({ item }) => {
       ? `${item.seasonNumber}x${String(item.episodeNumber).padStart(2, '0')}`
       : null;
 
+  // Release type label for movies
+  const getReleaseTypeLabel = (releaseType?: string) => {
+    switch (releaseType) {
+      case 'digital':
+        return 'Digital';
+      case 'physical':
+        return 'Physical';
+      case 'inCinemas':
+        return 'In Cinemas';
+      default:
+        return null;
+    }
+  };
+
+  const releaseTypeLabel =
+    item.type === 'movie' ? getReleaseTypeLabel(item.releaseType) : null;
+
   // Determine border color based on status
   // Status values from Radarr/Sonarr: 'released', 'announced', etc.
+  // Priority: availability status > watchlist (watchlist shown via star icon)
   const getStatusColor = (status: string, hasFile: boolean) => {
-    // If in watchlist, use special color
-    if (item.inWatchlist) {
-      return 'border-l-yellow-500'; // Watchlist items in gold
-    }
-
-    // Status-based colors
+    // Status-based colors take priority
     if (hasFile) {
-      return 'border-l-green-500'; // Downloaded (weekly episodes)
+      return 'border-l-green-500'; // Downloaded/Available
     } else if (status === 'released') {
       return 'border-l-orange-500'; // Released but not downloaded yet
-    } else if (status === 'announced') {
-      return 'border-l-blue-500'; // Announced/Coming soon
     } else if (status === 'inCinemas') {
       return 'border-l-purple-500'; // In theaters
+    } else if (item.inWatchlist) {
+      return 'border-l-yellow-500'; // In watchlist but not yet released
+    } else if (status === 'announced') {
+      return 'border-l-blue-500'; // Announced/Coming soon
     } else {
       return 'border-l-gray-500'; // Unknown status
     }
@@ -145,6 +161,23 @@ const CalendarCard: React.FC<CalendarCardProps> = ({ item }) => {
             <h3 className="mb-1 truncate text-sm font-bold text-white">
               {item.title}
             </h3>
+
+            {/* Release type info (Movies only) */}
+            {item.type === 'movie' && releaseTypeLabel && (
+              <div className="mb-1 text-xs text-gray-400">
+                <span
+                  className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+                    item.releaseType === 'inCinemas'
+                      ? 'bg-purple-500/20 text-purple-400'
+                      : item.releaseType === 'digital'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-orange-500/20 text-orange-400'
+                  }`}
+                >
+                  {releaseTypeLabel}
+                </span>
+              </div>
+            )}
 
             {/* Episode info (TV only) */}
             {item.type === 'tv' && (

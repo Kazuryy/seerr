@@ -270,6 +270,7 @@ class RadarrAPI extends ServarrBase<{ movieId: number }> {
         params: {
           start: startDate.toISOString().split('T')[0],
           end: endDate.toISOString().split('T')[0],
+          unmonitored: true,
         },
       });
 

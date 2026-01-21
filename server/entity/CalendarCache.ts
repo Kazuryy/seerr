@@ -33,6 +33,9 @@ export class CalendarCache {
   @Index()
   public releaseDate: Date;
 
+  @Column({ type: 'varchar', nullable: true })
+  public releaseType?: string; // 'digital' | 'physical' | 'inCinemas' | 'premiere' (for TV)
+
   @Column({ type: 'text', nullable: true })
   public overview?: string;
 

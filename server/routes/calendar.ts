@@ -31,6 +31,7 @@ interface CalendarItem {
   episodeNumber?: number;
   episodeTitle?: string;
   releaseDate: Date;
+  releaseType?: string; // 'digital' | 'physical' | 'inCinemas' | 'premiere'
   overview?: string;
   status: string;
   hasFile: boolean;
@@ -121,8 +122,21 @@ calendarRoutes.get<never, CalendarResponse>(
         // Transform to CalendarCache-like format
         const radarrItems = radarrData
           .map((movie: RadarrMovieCalendar) => {
-            const releaseDateStr =
-              movie.digitalRelease || movie.physicalRelease || movie.inCinemas;
+            // Determine release date and type
+            let releaseDateStr: string | undefined;
+            let releaseType: string | undefined;
+
+            if (movie.digitalRelease) {
+              releaseDateStr = movie.digitalRelease;
+              releaseType = 'digital';
+            } else if (movie.physicalRelease) {
+              releaseDateStr = movie.physicalRelease;
+              releaseType = 'physical';
+            } else if (movie.inCinemas) {
+              releaseDateStr = movie.inCinemas;
+              releaseType = 'inCinemas';
+            }
+
             if (!releaseDateStr) return null;
             const releaseDate = new Date(releaseDateStr);
             if (!releaseDate || isNaN(releaseDate.getTime())) return null;
@@ -145,6 +159,7 @@ calendarRoutes.get<never, CalendarResponse>(
               tmdbId: movie.tmdbId,
               title: movie.title,
               releaseDate,
+              releaseType,
               overview: movie.overview,
               status,
               monitored: movie.monitored,
@@ -184,6 +199,7 @@ calendarRoutes.get<never, CalendarResponse>(
               episodeNumber: episode.episodeNumber,
               episodeTitle: episode.title,
               releaseDate,
+              releaseType: 'premiere',
               overview: episode.overview,
               status,
               monitored: episode.monitored,
@@ -294,6 +310,7 @@ calendarRoutes.get<never, CalendarResponse>(
           episodeNumber: item.episodeNumber,
           episodeTitle: item.episodeTitle,
           releaseDate: item.releaseDate,
+          releaseType: item.releaseType,
           overview: item.overview,
           status: item.status,
           hasFile: item.hasFile,

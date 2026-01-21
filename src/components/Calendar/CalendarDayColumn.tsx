@@ -9,6 +9,7 @@ interface CalendarItem {
   episodeNumber?: number;
   episodeTitle?: string;
   releaseDate: string;
+  releaseType?: 'digital' | 'physical' | 'inCinemas' | 'premiere';
   inWatchlist: boolean;
   countdown: number;
   posterPath?: string;
