@@ -130,6 +130,14 @@ export interface DeletionSettings {
   discordRoleId?: string;
 }
 
+export interface TrackingSettings {
+  jellyfinAutoSync: {
+    completionThreshold: number; // 0-100, percentage of media that must be watched to count as completed
+    minWatchSeconds: number; // Minimum seconds watched to count as completed
+    minActivitySeconds: number; // Minimum seconds to count as daily activity (for streaks)
+  };
+}
+
 export interface MainSettings {
   apiKey: string;
   applicationTitle: string;
@@ -376,6 +384,7 @@ export interface AllSettings {
   jobs: Record<JobId, JobSettings>;
   network: NetworkSettings;
   metadataSettings: MetadataSettings;
+  tracking: TrackingSettings;
   migrations: string[];
 }
 
@@ -620,6 +629,13 @@ class Settings {
           forceMaxTtl: -1,
         },
       },
+      tracking: {
+        jellyfinAutoSync: {
+          completionThreshold: 85, // 85% of media must be watched
+          minWatchSeconds: 120, // 2 minutes minimum for completed watches
+          minActivitySeconds: 60, // 1 minute minimum for daily activity
+        },
+      },
       migrations: [],
     };
     if (initialSettings) {
@@ -757,6 +773,14 @@ class Settings {
 
   set migrations(data: string[]) {
     this.data.migrations = data;
+  }
+
+  get tracking(): TrackingSettings {
+    return this.data.tracking;
+  }
+
+  set tracking(data: TrackingSettings) {
+    this.data.tracking = data;
   }
 
   get clientId(): string {

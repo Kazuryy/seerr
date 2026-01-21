@@ -16,9 +16,16 @@ const seriesToTmdbCache: Map<string, number | null> = new Map();
 
 // Default configuration
 const DEFAULT_POLL_INTERVAL = 10000; // 10 seconds
-const DEFAULT_COMPLETION_THRESHOLD = 85; // 85% watched = complete
-const DEFAULT_MIN_WATCH_SECONDS = 120; // 2 minutes minimum
-const MIN_ACTIVITY_SECONDS = 60; // Minimum 1 minute to count as daily activity
+
+// Helper to get tracking settings
+const getTrackingSettings = () => {
+  const settings = getSettings();
+  return settings.tracking?.jellyfinAutoSync ?? {
+    completionThreshold: 85,
+    minWatchSeconds: 120,
+    minActivitySeconds: 60,
+  };
+};
 
 interface ActiveSession {
   sessionId: string;
@@ -157,11 +164,13 @@ class JellyfinActivityMonitor {
         .getMany();
 
       this.userSyncSettings.clear();
+      const trackingSettings = getTrackingSettings();
       for (const user of linkedUsers) {
         this.userSyncSettings.set(user.id, {
           enabled: user.jellyfinAutoSyncEnabled,
-          completionThreshold: user.jellyfinAutoSyncThreshold || DEFAULT_COMPLETION_THRESHOLD,
-          minWatchSeconds: user.jellyfinAutoSyncMinSeconds || DEFAULT_MIN_WATCH_SECONDS,
+          // Use global settings from admin configuration
+          completionThreshold: trackingSettings.completionThreshold,
+          minWatchSeconds: trackingSettings.minWatchSeconds,
         });
       }
 
@@ -481,17 +490,16 @@ class JellyfinActivityMonitor {
         ? (session.positionTicks / session.runtimeTicks) * 100
         : 0;
 
-    // Calculate watch duration in seconds
+    // Calculate watch duration in seconds (real time spent watching)
     const watchDurationSeconds =
       (new Date().getTime() - session.startedAt.getTime()) / 1000;
 
-    // Calculate actual minutes watched based on position
-    const minutesWatched = session.positionTicks
-      ? Math.round(session.positionTicks / 10000000 / 60)
-      : 0;
+    // Calculate minutes watched based on actual watch duration (not position in media)
+    // Use floor to avoid overestimating time
+    const minutesWatched = Math.floor(watchDurationSeconds / 60);
 
     logger.debug(
-      `Session ended: ${session.mediaTitle} - ${watchPercentage.toFixed(1)}% watched, ${watchDurationSeconds.toFixed(0)}s duration`,
+      `Session ended: ${session.mediaTitle} - ${watchPercentage.toFixed(1)}% watched, ${watchDurationSeconds.toFixed(0)}s duration (${minutesWatched} mins)`,
       {
         label: 'Jellyfin Activity Monitor',
         sessionId: session.sessionId,
@@ -504,7 +512,8 @@ class JellyfinActivityMonitor {
       watchPercentage >= userSettings.completionThreshold &&
       watchDurationSeconds >= userSettings.minWatchSeconds;
 
-    if (watchDurationSeconds >= MIN_ACTIVITY_SECONDS) {
+    const trackingSettings = getTrackingSettings();
+    if (watchDurationSeconds >= trackingSettings.minActivitySeconds) {
       await this.recordDailyActivity(
         session.seerrUserId,
         minutesWatched,
