@@ -313,6 +313,24 @@ components:
             forceMaxTtl:
               type: number
               example: -1
+    TrackingSettings:
+      type: object
+      properties:
+        jellyfinAutoSync:
+          type: object
+          properties:
+            completionThreshold:
+              type: number
+              description: Percentage of media that must be watched to count as completed (0-100)
+              example: 85
+            minWatchSeconds:
+              type: number
+              description: Minimum seconds watched to count as a completed watch
+              example: 120
+            minActivitySeconds:
+              type: number
+              description: Minimum seconds to count as daily activity for streaks
+              example: 60
     PlexLibrary:
       type: object
       properties:
@@ -2254,6 +2272,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NetworkSettings'
+  /settings/tracking:
+    get:
+      summary: Get tracking settings
+      description: Retrieves all tracking settings including Jellyfin auto-sync thresholds.
+      tags:
+        - settings
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingSettings'
+    post:
+      summary: Update tracking settings
+      description: Updates tracking settings with the provided values.
+      tags:
+        - settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackingSettings'
+      responses:
+        '200':
+          description: 'Values were successfully updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingSettings'
   /settings/main/regenerate:
     post:
       summary: Get main settings with newly-generated API key

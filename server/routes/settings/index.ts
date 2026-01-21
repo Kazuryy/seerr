@@ -20,7 +20,12 @@ import ImageProxy from '@server/lib/imageproxy';
 import { Permission } from '@server/lib/permissions';
 import { jellyfinFullScanner } from '@server/lib/scanners/jellyfin';
 import { plexFullScanner } from '@server/lib/scanners/plex';
-import type { JobId, Library, MainSettings } from '@server/lib/settings';
+import type {
+  JobId,
+  Library,
+  MainSettings,
+  TrackingSettings,
+} from '@server/lib/settings';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
 import { isAuthenticated } from '@server/middleware/auth';
@@ -468,6 +473,65 @@ settingsRoutes.post('/tautulli', async (req, res, next) => {
 
   return res.status(200).json(settings.tautulli);
 });
+
+settingsRoutes.get('/tracking', (_req, res) => {
+  const settings = getSettings();
+
+  res.status(200).json(settings.tracking);
+});
+
+settingsRoutes.post<Record<string, never>, TrackingSettings, TrackingSettings>(
+  '/tracking',
+  async (req, res) => {
+    const settings = getSettings();
+
+    // Validate the values
+    const { jellyfinAutoSync } = req.body;
+
+    if (jellyfinAutoSync) {
+      // Ensure values are within valid ranges
+      if (
+        jellyfinAutoSync.completionThreshold !== undefined &&
+        (jellyfinAutoSync.completionThreshold < 0 ||
+          jellyfinAutoSync.completionThreshold > 100)
+      ) {
+        return res.status(400).json({
+          message: 'completionThreshold must be between 0 and 100',
+        } as unknown as TrackingSettings);
+      }
+
+      if (
+        jellyfinAutoSync.minWatchSeconds !== undefined &&
+        jellyfinAutoSync.minWatchSeconds < 0
+      ) {
+        return res.status(400).json({
+          message: 'minWatchSeconds must be a positive number',
+        } as unknown as TrackingSettings);
+      }
+
+      if (
+        jellyfinAutoSync.minActivitySeconds !== undefined &&
+        jellyfinAutoSync.minActivitySeconds < 0
+      ) {
+        return res.status(400).json({
+          message: 'minActivitySeconds must be a positive number',
+        } as unknown as TrackingSettings);
+      }
+
+      // Update settings
+      settings.tracking = {
+        jellyfinAutoSync: {
+          ...settings.tracking.jellyfinAutoSync,
+          ...jellyfinAutoSync,
+        },
+      };
+    }
+
+    await settings.save();
+
+    return res.status(200).json(settings.tracking);
+  }
+);
 
 settingsRoutes.get(
   '/plex/users',

@@ -15,6 +15,7 @@ const messages = defineMessages('components.Settings', {
   menuServices: 'Services',
   menuDeletion: 'Deletion Voting',
   menuNetwork: 'Network',
+  menuTracking: 'Tracking',
   menuNotifications: 'Notifications',
   menuLogs: 'Logs',
   menuJobs: 'Jobs & Cache',
@@ -65,6 +66,11 @@ const SettingsLayout = ({ children }: SettingsLayoutProps) => {
       text: intl.formatMessage(messages.menuNetwork),
       route: '/settings/network',
       regex: /^\/settings\/network/,
+    },
+    {
+      text: intl.formatMessage(messages.menuTracking),
+      route: '/settings/tracking',
+      regex: /^\/settings\/tracking/,
     },
     {
       text: intl.formatMessage(messages.menuMetadataProviders),

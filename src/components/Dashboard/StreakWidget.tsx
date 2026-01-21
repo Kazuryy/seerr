@@ -9,9 +9,12 @@ const messages = defineMessages('components.Dashboard.StreakWidget', {
   title: 'Watch Streak',
   currentStreak: 'Current Streak',
   longestStreak: 'Longest Streak',
+  bestStreak: 'Best Streak',
   days: '{count, plural, one {# day} other {# days}}',
   noStreak: 'No streak yet',
   startStreak: 'Watch something to start your streak!',
+  streakLost: 'Streak lost',
+  startNewStreak: 'Watch something to start a new streak!',
   watchedToday: 'Watched today',
   watchToKeepStreak: 'Watch today to keep your streak!',
   streakAtRisk: 'Streak at risk!',
@@ -26,7 +29,8 @@ const StreakWidget = ({ userId }: StreakWidgetProps) => {
   const intl = useIntl();
   const { data, isLoading } = useWatchStreak(userId);
 
-  const hasStreak = data && (data.currentStreak > 0 || data.longestStreak > 0);
+  const hasActiveStreak = data && data.currentStreak > 0;
+  const hadPreviousStreak = data && data.longestStreak > 0;
 
   // Check if user watched today
   const watchedToday = (() => {
@@ -64,7 +68,8 @@ const StreakWidget = ({ userId }: StreakWidgetProps) => {
         <div className="flex flex-1 items-center justify-center">
           <LoadingSpinner />
         </div>
-      ) : !hasStreak ? (
+      ) : !hasActiveStreak && !hadPreviousStreak ? (
+        // Case 1: Never had a streak
         <div className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="mb-2 text-3xl opacity-50">🔥</div>
           <p className="text-sm text-gray-400">
@@ -74,7 +79,51 @@ const StreakWidget = ({ userId }: StreakWidgetProps) => {
             {intl.formatMessage(messages.startStreak)}
           </p>
         </div>
+      ) : !hasActiveStreak && hadPreviousStreak ? (
+        // Case 2: Had a streak before but lost it (currentStreak = 0, longestStreak > 0)
+        <div className="flex flex-1 flex-col">
+          {/* Best streak - prominent */}
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <div className="text-xs text-gray-400">
+                {intl.formatMessage(messages.bestStreak)}
+              </div>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold text-orange-400">
+                  {data?.longestStreak || 0}
+                </span>
+                <span className="ml-1 text-sm text-gray-400">
+                  {(data?.longestStreak || 0) === 1 ? 'day' : 'days'}
+                </span>
+              </div>
+            </div>
+
+            {/* Inactive fire */}
+            <div className="relative">
+              <FireIcon className="h-12 w-12 text-gray-600" />
+            </div>
+          </div>
+
+          {/* Status message */}
+          <div className="mb-3 rounded-md bg-gray-700/50 px-3 py-2 text-center text-sm text-gray-300">
+            <span className="flex items-center justify-center">
+              {intl.formatMessage(messages.streakLost)}
+            </span>
+          </div>
+
+          <p className="text-center text-xs text-gray-500">
+            {intl.formatMessage(messages.startNewStreak)}
+          </p>
+
+          {/* Last watched */}
+          {data?.lastWatchDate && (
+            <div className="mt-auto border-t border-gray-700 pt-3 text-xs text-gray-500">
+              {formatLastWatched()}
+            </div>
+          )}
+        </div>
       ) : (
+        // Case 3: Has an active streak
         <div className="flex flex-1 flex-col">
           {/* Current streak - prominent */}
           <div className="mb-4 flex items-center justify-between">
