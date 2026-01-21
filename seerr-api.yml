@@ -56,6 +56,78 @@ servers:
 
 components:
   schemas:
+    SeriesProgress:
+      type: object
+      properties:
+        mediaId:
+          type: number
+          description: Internal media ID
+        tmdbId:
+          type: number
+          description: TMDB ID for the series
+        title:
+          type: string
+          nullable: true
+          description: Series title
+        posterPath:
+          type: string
+          nullable: true
+          description: Poster image path
+        watchedEpisodes:
+          type: number
+          description: Number of episodes watched
+        totalEpisodes:
+          type: number
+          description: Total number of episodes in the series
+        totalSeasons:
+          type: number
+          description: Total number of seasons
+        completionPercentage:
+          type: number
+          description: Percentage of series completed (0-100)
+        status:
+          type: string
+          enum: [not_started, in_progress, completed, abandoned]
+          description: Current watch status
+        isOngoing:
+          type: boolean
+          description: Whether the series is still in production
+        isCompleted:
+          type: boolean
+          description: Whether the user has completed the series
+        lastWatchedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the user last watched an episode
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the user completed the series
+
+    SeriesCompletionStats:
+      type: object
+      properties:
+        totalStarted:
+          type: number
+          description: Total number of series started
+        totalCompleted:
+          type: number
+          description: Total number of series completed
+        totalAbandoned:
+          type: number
+          description: Total number of series abandoned
+        totalInProgress:
+          type: number
+          description: Total number of series currently in progress
+        averageCompletion:
+          type: number
+          description: Average completion percentage across all started series
+        totalEpisodesWatched:
+          type: number
+          description: Total unique episodes watched across all series
+
     Blacklist:
       type: object
       properties:
@@ -6021,6 +6093,184 @@ paths:
           description: Invalid request body or no media found in database
         '403':
           description: Only administrators can seed test data
+
+  /tracking/series/{mediaId}/progress:
+    get:
+      summary: Get series progress for a specific media
+      description: Returns the user's watch progress for a TV series, including watched episodes, total episodes, and completion percentage.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: mediaId
+          required: true
+          schema:
+            type: number
+          description: The internal media ID
+      responses:
+        '200':
+          description: Series progress returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesProgress'
+        '400':
+          description: Invalid media ID or media does not have a TMDB ID
+        '404':
+          description: Media not found
+
+  /tracking/series/progress:
+    get:
+      summary: Get all series progress for the current user
+      description: Returns a paginated list of all TV series the user has started watching, with their progress.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [all, in_progress, completed, abandoned]
+            default: all
+          description: Filter by progress status
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [lastWatched, percentage, name]
+            default: lastWatched
+          description: Sort order for results
+        - in: query
+          name: take
+          schema:
+            type: number
+            default: 20
+            maximum: 100
+          description: Number of results per page
+        - in: query
+          name: skip
+          schema:
+            type: number
+            default: 0
+          description: Number of results to skip
+      responses:
+        '200':
+          description: Series progress list returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pageInfo:
+                    $ref: '#/components/schemas/PageInfo'
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SeriesProgress'
+
+  /tracking/series/{mediaId}/abandon:
+    post:
+      summary: Mark a series as abandoned
+      description: Marks a TV series as abandoned by the user. The series can be resumed later.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: mediaId
+          required: true
+          schema:
+            type: number
+          description: The internal media ID
+      responses:
+        '200':
+          description: Series marked as abandoned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesProgress'
+        '404':
+          description: Series progress not found
+
+  /tracking/series/{mediaId}/resume:
+    post:
+      summary: Resume an abandoned series
+      description: Resumes a previously abandoned TV series, changing its status back to in_progress.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: mediaId
+          required: true
+          schema:
+            type: number
+          description: The internal media ID
+      responses:
+        '200':
+          description: Series resumed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesProgress'
+        '404':
+          description: Series not found or not abandoned
+
+  /tracking/stats/{userId}/series-completion:
+    get:
+      summary: Get series completion stats for a user
+      description: Returns statistics about a user's TV series watching habits, including completion rates.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+          description: The user ID to get stats for
+      responses:
+        '200':
+          description: Series completion stats returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesCompletionStats'
+        '403':
+          description: Not authorized to view this user's stats
+
+  /tracking/series/recalculate:
+    post:
+      summary: Recalculate all series progress
+      description: Triggers a recalculation of all series progress for the current user. Useful after TMDB data updates.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      responses:
+        '202':
+          description: Recalculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
 
   /user/{userId}/settings/main:
     get:

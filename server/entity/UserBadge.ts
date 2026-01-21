@@ -1,4 +1,3 @@
-import { DbAwareColumn } from '@server/utils/DbColumnHelper';
 import {
   Column,
   CreateDateColumn,
@@ -23,6 +22,13 @@ export enum BadgeType {
   TV_EPISODES_500 = 'TV_EPISODES_500',
   TV_EPISODES_1000 = 'TV_EPISODES_1000',
   TV_EPISODES_5000 = 'TV_EPISODES_5000',
+
+  // Series completion milestones
+  SERIES_COMPLETED_1 = 'SERIES_COMPLETED_1',
+  SERIES_COMPLETED_5 = 'SERIES_COMPLETED_5',
+  SERIES_COMPLETED_10 = 'SERIES_COMPLETED_10',
+  SERIES_COMPLETED_25 = 'SERIES_COMPLETED_25',
+  SERIES_COMPLETED_50 = 'SERIES_COMPLETED_50',
 
   // Review milestones
   REVIEWS_WRITTEN_1 = 'REVIEWS_WRITTEN_1',

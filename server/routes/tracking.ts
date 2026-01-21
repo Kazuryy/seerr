@@ -9,6 +9,7 @@ import { ReviewLike } from '@server/entity/ReviewLike';
 import type { User } from '@server/entity/User';
 import { WatchHistory } from '@server/entity/WatchHistory';
 import badgeService from '@server/lib/badgeService';
+import seriesProgressService from '@server/lib/seriesProgressService';
 import logger from '@server/logger';
 import { isAuthenticated } from '@server/middleware/auth';
 import { Router } from 'express';
@@ -624,7 +625,9 @@ trackingRoutes.post('/watch', isAuthenticated(), async (req, res, next) => {
     await watchHistoryRepository.save(watchEntry);
 
     // Record daily activity for streak tracking
-    const activityDate = `${watchDate.getFullYear()}-${String(watchDate.getMonth() + 1).padStart(2, '0')}-${String(watchDate.getDate()).padStart(2, '0')}`;
+    const activityDate = `${watchDate.getFullYear()}-${String(
+      watchDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(watchDate.getDate()).padStart(2, '0')}`;
 
     let activity = await dailyActivityRepository.findOne({
       where: {
@@ -648,6 +651,20 @@ trackingRoutes.post('/watch', isAuthenticated(), async (req, res, next) => {
     }
 
     await dailyActivityRepository.save(activity);
+
+    // Update series progress for TV shows
+    if (validatedBody.mediaType === 'tv' && media.tmdbId) {
+      seriesProgressService
+        .updateProgress(user.id, validatedBody.mediaId, media.tmdbId)
+        .catch((error) => {
+          logger.error('Failed to update series progress', {
+            label: 'Tracking Routes',
+            userId: user.id,
+            mediaId: validatedBody.mediaId,
+            error: error.message,
+          });
+        });
+    }
 
     // Award badges for the new watch
     await badgeService.checkAndAwardBadges(user.id);
@@ -1759,7 +1776,9 @@ trackingRoutes.get<{ userId: string }>(
         .select('watch.watchedAt', 'watchedAt')
         .addSelect('watch.mediaType', 'mediaType')
         .where('watch.userId = :userId', { userId })
-        .andWhere('watch.watchedAt >= :startDate', { startDate: threeMonthsAgo })
+        .andWhere('watch.watchedAt >= :startDate', {
+          startDate: threeMonthsAgo,
+        })
         .orderBy('watch.watchedAt', 'ASC')
         .getRawMany();
 
@@ -1874,10 +1893,22 @@ trackingRoutes.get<{ userId: string }>(
       const result = await watchHistoryRepository
         .createQueryBuilder('watch')
         .select('SUM(watch.runtimeMinutes)', 'totalMinutes')
-        .addSelect('COUNT(CASE WHEN watch.mediaType = :movie THEN 1 END)', 'movieCount')
-        .addSelect('COUNT(CASE WHEN watch.episodeNumber IS NOT NULL THEN 1 END)', 'episodeCount')
-        .addSelect('SUM(CASE WHEN watch.mediaType = :movie THEN watch.runtimeMinutes ELSE 0 END)', 'movieMinutes')
-        .addSelect('SUM(CASE WHEN watch.episodeNumber IS NOT NULL THEN watch.runtimeMinutes ELSE 0 END)', 'episodeMinutes')
+        .addSelect(
+          'COUNT(CASE WHEN watch.mediaType = :movie THEN 1 END)',
+          'movieCount'
+        )
+        .addSelect(
+          'COUNT(CASE WHEN watch.episodeNumber IS NOT NULL THEN 1 END)',
+          'episodeCount'
+        )
+        .addSelect(
+          'SUM(CASE WHEN watch.mediaType = :movie THEN watch.runtimeMinutes ELSE 0 END)',
+          'movieMinutes'
+        )
+        .addSelect(
+          'SUM(CASE WHEN watch.episodeNumber IS NOT NULL THEN watch.runtimeMinutes ELSE 0 END)',
+          'episodeMinutes'
+        )
         .where('watch.userId = :userId', { userId })
         .setParameter('movie', MediaType.MOVIE)
         .getRawOne();
@@ -2483,6 +2514,350 @@ trackingRoutes.post(
       return next({
         status: 500,
         message: 'Unable to seed test data.',
+      });
+    }
+  }
+);
+
+// ============================================
+// Series Progress Endpoints
+// ============================================
+
+/**
+ * Get series progress for a specific media
+ */
+trackingRoutes.get(
+  '/series/:mediaId/progress',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const mediaId = parseInt(req.params.mediaId);
+      const user = req.user as User;
+
+      if (isNaN(mediaId)) {
+        return next({
+          status: 400,
+          message: 'Invalid media ID.',
+        });
+      }
+
+      const mediaRepository = getRepository(Media);
+      const media = await mediaRepository.findOne({
+        where: { id: mediaId },
+      });
+
+      if (!media) {
+        return next({
+          status: 404,
+          message: 'Media not found.',
+        });
+      }
+
+      if (!media.tmdbId) {
+        return next({
+          status: 400,
+          message: 'Media does not have a TMDB ID.',
+        });
+      }
+
+      // Fetch TMDB data for title and poster
+      const tmdb = new TheMovieDb();
+      let title: string | undefined;
+      let posterPath: string | undefined;
+      try {
+        const tvShow = await tmdb.getTvShow({ tvId: media.tmdbId });
+        title = tvShow.name;
+        posterPath = tvShow.poster_path || undefined;
+      } catch {
+        // Continue without title/poster if TMDB fails
+      }
+
+      // Get or calculate progress
+      const progress = await seriesProgressService.getSeriesProgress(
+        user.id,
+        mediaId
+      );
+
+      if (!progress) {
+        // Calculate progress on-the-fly
+        const calculated = await seriesProgressService.calculateProgress(
+          user.id,
+          mediaId,
+          media.tmdbId
+        );
+
+        return res.status(200).json({
+          mediaId,
+          tmdbId: media.tmdbId,
+          title,
+          posterPath,
+          watchedEpisodes: calculated.watchedEpisodes,
+          totalEpisodes: calculated.totalEpisodes,
+          totalSeasons: calculated.totalSeasons,
+          completionPercentage: calculated.percentage,
+          status:
+            calculated.watchedEpisodes === 0 ? 'not_started' : 'in_progress',
+          isOngoing: calculated.isOngoing,
+          isCompleted: calculated.isCompleted,
+          lastWatchedAt: null,
+          completedAt: null,
+        });
+      }
+
+      return res.status(200).json({
+        mediaId: progress.mediaId,
+        tmdbId: progress.tmdbId,
+        title,
+        posterPath,
+        watchedEpisodes: progress.watchedEpisodes,
+        totalEpisodes: progress.totalEpisodes,
+        totalSeasons: progress.totalSeasons,
+        completionPercentage: progress.completionPercentage,
+        status: progress.status,
+        isOngoing: progress.isOngoing,
+        isCompleted: progress.status === 'completed',
+        lastWatchedAt: progress.lastWatchedAt,
+        completedAt: progress.completedAt,
+      });
+    } catch (error) {
+      logger.error('Failed to get series progress', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to get series progress.',
+      });
+    }
+  }
+);
+
+const getSeriesProgressListSchema = z.object({
+  status: z
+    .enum(['all', 'in_progress', 'completed', 'abandoned'])
+    .default('all'),
+  sortBy: z.enum(['lastWatched', 'percentage', 'name']).default('lastWatched'),
+  take: z.coerce.number().int().positive().max(100).default(20),
+  skip: z.coerce.number().int().nonnegative().default(0),
+});
+
+/**
+ * Get all series progress for the current user
+ */
+trackingRoutes.get(
+  '/series/progress',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const user = req.user as User;
+      const { status, sortBy, take, skip } = getSeriesProgressListSchema.parse(
+        req.query
+      );
+
+      const { results, totalCount } =
+        await seriesProgressService.getUserSeriesProgress(user.id, {
+          status,
+          sortBy,
+          limit: take,
+          offset: skip,
+        });
+
+      return res.status(200).json({
+        pageInfo: {
+          pages: Math.ceil(totalCount / take),
+          pageSize: take,
+          results: totalCount,
+          page: Math.floor(skip / take) + 1,
+        },
+        results,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next({
+          status: 400,
+          message: 'Invalid query parameters.',
+          errors: error.errors,
+        });
+      }
+
+      logger.error('Failed to get series progress list', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to get series progress list.',
+      });
+    }
+  }
+);
+
+/**
+ * Mark a series as abandoned
+ */
+trackingRoutes.post(
+  '/series/:mediaId/abandon',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const mediaId = parseInt(req.params.mediaId);
+      const user = req.user as User;
+
+      if (isNaN(mediaId)) {
+        return next({
+          status: 400,
+          message: 'Invalid media ID.',
+        });
+      }
+
+      const progress = await seriesProgressService.markAsAbandoned(
+        user.id,
+        mediaId
+      );
+
+      if (!progress) {
+        return next({
+          status: 404,
+          message: 'Series progress not found.',
+        });
+      }
+
+      return res.status(200).json(progress);
+    } catch (error) {
+      logger.error('Failed to mark series as abandoned', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to mark series as abandoned.',
+      });
+    }
+  }
+);
+
+/**
+ * Resume a previously abandoned series
+ */
+trackingRoutes.post(
+  '/series/:mediaId/resume',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const mediaId = parseInt(req.params.mediaId);
+      const user = req.user as User;
+
+      if (isNaN(mediaId)) {
+        return next({
+          status: 400,
+          message: 'Invalid media ID.',
+        });
+      }
+
+      const progress = await seriesProgressService.resumeSeries(
+        user.id,
+        mediaId
+      );
+
+      if (!progress) {
+        return next({
+          status: 404,
+          message: 'Series not found or not abandoned.',
+        });
+      }
+
+      return res.status(200).json(progress);
+    } catch (error) {
+      logger.error('Failed to resume series', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to resume series.',
+      });
+    }
+  }
+);
+
+/**
+ * Get series completion stats for a user
+ */
+trackingRoutes.get(
+  '/stats/:userId/series-completion',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const currentUser = req.user as User;
+
+      if (isNaN(userId)) {
+        return next({
+          status: 400,
+          message: 'Invalid user ID.',
+        });
+      }
+
+      // Users can only view their own stats or admins can view anyone's
+      if (userId !== currentUser.id && !currentUser.hasPermission(2)) {
+        return next({
+          status: 403,
+          message: "You do not have permission to view this user's stats.",
+        });
+      }
+
+      const stats = await seriesProgressService.getUserSeriesStats(userId);
+
+      return res.status(200).json(stats);
+    } catch (error) {
+      logger.error('Failed to get series completion stats', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to get series completion stats.',
+      });
+    }
+  }
+);
+
+/**
+ * Recalculate all series progress for the current user
+ */
+trackingRoutes.post(
+  '/series/recalculate',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const user = req.user as User;
+
+      // Run in background
+      seriesProgressService.recalculateAllProgress(user.id).catch((error) => {
+        logger.error('Failed to recalculate series progress', {
+          label: 'Tracking Routes',
+          userId: user.id,
+          error: error.message,
+        });
+      });
+
+      return res.status(202).json({
+        message: 'Series progress recalculation started.',
+      });
+    } catch (error) {
+      logger.error('Failed to start series progress recalculation', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to start series progress recalculation.',
       });
     }
   }

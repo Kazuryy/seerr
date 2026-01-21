@@ -25,6 +25,7 @@ import MediaSlider from '@app/components/MediaSlider';
 import PersonCard from '@app/components/PersonCard';
 import RequestButton from '@app/components/RequestButton';
 import RequestModal from '@app/components/RequestModal';
+import { SeriesProgressSection } from '@app/components/SeriesProgress';
 import Slider from '@app/components/Slider';
 import StatusBadge from '@app/components/StatusBadge';
 import { ReviewButton } from '@app/components/TrackingButtons';
@@ -1336,11 +1337,17 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
               />
             </div>
           </div>
-          {data.mediaInfo?.id && (
-            <CommunitySection mediaId={data.mediaInfo.id} mediaType="tv" />
-          )}
-          <MediaActivitySection tmdbId={data.id} mediaType="tv" />
         </div>
+      </div>
+      {/* Activity Section - Full Width Grid */}
+      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {data.mediaInfo?.id && (
+          <>
+            <SeriesProgressSection mediaId={data.mediaInfo.id} />
+            <CommunitySection mediaId={data.mediaInfo.id} mediaType="tv" />
+          </>
+        )}
+        <MediaActivitySection tmdbId={data.id} mediaType="tv" />
       </div>
       {data.credits.cast.length > 0 && (
         <>

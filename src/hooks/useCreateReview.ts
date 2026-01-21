@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useCallback, useState } from 'react';
+import { useSWRConfig } from 'swr';
 import type { Review } from './useReviews';
 import type { MediaType } from './useWatchHistory';
 
@@ -26,6 +27,7 @@ interface UseCreateReviewResult {
  * Hook to create, update, and delete reviews
  */
 export const useCreateReview = (): UseCreateReviewResult => {
+  const { mutate } = useSWRConfig();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +41,18 @@ export const useCreateReview = (): UseCreateReviewResult => {
           '/api/v1/tracking/reviews',
           params
         );
+
+        // Invalidate all review-related caches
+        mutate(
+          (key) =>
+            typeof key === 'string' &&
+            (key.includes('/reviews') ||
+              key.includes('/activity') ||
+              key.includes('/tracking')),
+          undefined,
+          { revalidate: true }
+        );
+
         return response.data;
       } catch (err) {
         const errorMessage =
@@ -51,7 +65,7 @@ export const useCreateReview = (): UseCreateReviewResult => {
         setIsLoading(false);
       }
     },
-    []
+    [mutate]
   );
 
   const deleteReview = useCallback(async (reviewId: number): Promise<void> => {

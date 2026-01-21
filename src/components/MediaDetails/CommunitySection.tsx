@@ -55,16 +55,14 @@ const CommunitySection = ({ mediaId, mediaType }: CommunitySectionProps) => {
 
   if (isLoading) {
     return (
-      <div className="mt-8 rounded-lg bg-gray-800 p-6">
-        <div className="flex items-center justify-center">
-          <LoadingSpinner />
-        </div>
+      <div className="flex h-full items-center justify-center rounded-lg bg-gray-800 p-6">
+        <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="mt-8 rounded-lg border border-gray-700 bg-gray-800 p-6 shadow-lg">
+    <div className="h-full rounded-lg border border-gray-700 bg-gray-800 p-6 shadow-lg">
       <h3 className="mb-4 flex items-center text-xl font-bold text-white">
         <ChatBubbleLeftIcon className="mr-2 h-6 w-6" />
         {intl.formatMessage(messages.communityTitle)}

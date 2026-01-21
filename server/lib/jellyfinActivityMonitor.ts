@@ -1,4 +1,4 @@
-import JellyfinAPI, { JellyfinSession } from '@server/api/jellyfin';
+import JellyfinAPI, { type JellyfinSession } from '@server/api/jellyfin';
 import TheMovieDb from '@server/api/themoviedb';
 import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
@@ -7,6 +7,7 @@ import Media from '@server/entity/Media';
 import { User } from '@server/entity/User';
 import { WatchHistory } from '@server/entity/WatchHistory';
 import badgeService from '@server/lib/badgeService';
+import seriesProgressService from '@server/lib/seriesProgressService';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
 import { Between, IsNull } from 'typeorm';
@@ -20,11 +21,13 @@ const DEFAULT_POLL_INTERVAL = 10000; // 10 seconds
 // Helper to get tracking settings
 const getTrackingSettings = () => {
   const settings = getSettings();
-  return settings.tracking?.jellyfinAutoSync ?? {
-    completionThreshold: 85,
-    minWatchSeconds: 120,
-    minActivitySeconds: 60,
-  };
+  return (
+    settings.tracking?.jellyfinAutoSync ?? {
+      completionThreshold: 85,
+      minWatchSeconds: 120,
+      minActivitySeconds: 60,
+    }
+  );
 };
 
 interface ActiveSession {
@@ -74,10 +77,9 @@ class JellyfinActivityMonitor {
 
     const settings = getSettings();
     if (!settings.jellyfin?.apiKey) {
-      logger.info(
-        'Jellyfin not configured, Activity Monitor will not start',
-        { label: 'Jellyfin Activity Monitor' }
-      );
+      logger.info('Jellyfin not configured, Activity Monitor will not start', {
+        label: 'Jellyfin Activity Monitor',
+      });
       return;
     }
 
@@ -174,9 +176,12 @@ class JellyfinActivityMonitor {
         });
       }
 
-      logger.debug(`Loaded sync settings for ${this.userSyncSettings.size} users`, {
-        label: 'Jellyfin Activity Monitor',
-      });
+      logger.debug(
+        `Loaded sync settings for ${this.userSyncSettings.size} users`,
+        {
+          label: 'Jellyfin Activity Monitor',
+        }
+      );
     } catch (error) {
       logger.error('Failed to load user sync settings', {
         label: 'Jellyfin Activity Monitor',
@@ -314,7 +319,9 @@ class JellyfinActivityMonitor {
     if (!tmdbId) {
       // No TMDB ID found - can't track this
       logger.debug(
-        `Skipping session - no TMDB ID for ${nowPlayingItem.Name} (TVDB: ${nowPlayingItem.ProviderIds?.Tvdb || 'none'})`,
+        `Skipping session - no TMDB ID for ${nowPlayingItem.Name} (TVDB: ${
+          nowPlayingItem.ProviderIds?.Tvdb || 'none'
+        })`,
         {
           label: 'Jellyfin Activity Monitor',
         }
@@ -418,9 +425,12 @@ class JellyfinActivityMonitor {
 
       // No result found - cache the failure
       seriesToTmdbCache.set(jellyfinSeriesId, null);
-      logger.debug(`No TMDB match found for series "${title}" (TVDB: ${tvdbId})`, {
-        label: 'Jellyfin Activity Monitor',
-      });
+      logger.debug(
+        `No TMDB match found for series "${title}" (TVDB: ${tvdbId})`,
+        {
+          label: 'Jellyfin Activity Monitor',
+        }
+      );
 
       return 0;
     } catch (error) {
@@ -499,7 +509,11 @@ class JellyfinActivityMonitor {
     const minutesWatched = Math.floor(watchDurationSeconds / 60);
 
     logger.debug(
-      `Session ended: ${session.mediaTitle} - ${watchPercentage.toFixed(1)}% watched, ${watchDurationSeconds.toFixed(0)}s duration (${minutesWatched} mins)`,
+      `Session ended: ${session.mediaTitle} - ${watchPercentage.toFixed(
+        1
+      )}% watched, ${watchDurationSeconds.toFixed(
+        0
+      )}s duration (${minutesWatched} mins)`,
       {
         label: 'Jellyfin Activity Monitor',
         sessionId: session.sessionId,
@@ -523,7 +537,7 @@ class JellyfinActivityMonitor {
 
     // Create watch history entry if meets completion criteria
     if (isCompletedWatch) {
-      await this.createWatchHistoryEntry(session);
+      await this.createWatchHistoryEntry(session, minutesWatched);
     }
   }
 
@@ -540,7 +554,9 @@ class JellyfinActivityMonitor {
 
       // Get today's date in local timezone as YYYY-MM-DD
       const today = new Date();
-      const activityDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const activityDate = `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
       // Find or create today's activity record
       let activity = await dailyActivityRepository.findOne({
@@ -589,8 +605,13 @@ class JellyfinActivityMonitor {
 
   /**
    * Create a watch history entry for a completed session
+   * @param session The session that ended
+   * @param actualMinutesWatched The actual time spent watching (not media duration)
    */
-  private async createWatchHistoryEntry(session: ActiveSession): Promise<void> {
+  private async createWatchHistoryEntry(
+    session: ActiveSession,
+    actualMinutesWatched: number
+  ): Promise<void> {
     try {
       const mediaRepository = getRepository(Media);
       const watchHistoryRepository = getRepository(WatchHistory);
@@ -646,10 +667,9 @@ class JellyfinActivityMonitor {
           entryId: existingEntry.id,
         });
       } else {
-        // Calculate runtime in minutes from Jellyfin ticks (1 tick = 100 nanoseconds)
-        const runtimeMinutes = session.runtimeTicks
-          ? Math.round(session.runtimeTicks / 10000000 / 60)
-          : undefined;
+        // Use actual minutes watched (real session time), not media duration
+        const runtimeMinutes =
+          actualMinutesWatched > 0 ? actualMinutesWatched : undefined;
 
         // Create new entry
         const watchHistory = new WatchHistory({
@@ -672,6 +692,25 @@ class JellyfinActivityMonitor {
             mediaType: session.mediaType,
           }
         );
+
+        // Update series progress for TV shows (async, don't wait)
+        if (session.mediaType === MediaType.TV && media) {
+          const mediaIdForProgress = media.id;
+          seriesProgressService
+            .updateProgress(
+              session.seerrUserId,
+              mediaIdForProgress,
+              session.tmdbId
+            )
+            .catch((error) => {
+              logger.error('Failed to update series progress after auto-sync', {
+                label: 'Jellyfin Activity Monitor',
+                userId: session.seerrUserId,
+                mediaId: mediaIdForProgress,
+                error: error.message,
+              });
+            });
+        }
 
         // Check for new badges (async, don't wait)
         badgeService.checkAndAwardBadges(session.seerrUserId).catch((error) => {

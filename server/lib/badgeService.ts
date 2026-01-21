@@ -2,6 +2,7 @@ import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
 import { MediaReview } from '@server/entity/MediaReview';
 import { ReviewLike } from '@server/entity/ReviewLike';
+import { SeriesProgress } from '@server/entity/SeriesProgress';
 import { User } from '@server/entity/User';
 import { BadgeType, UserBadge } from '@server/entity/UserBadge';
 import { WatchHistory } from '@server/entity/WatchHistory';
@@ -94,6 +95,43 @@ export const BADGE_DEFINITIONS: Record<BadgeType, BadgeDefinition> = {
     displayName: 'TV Addict',
     description: 'Watched 5000 episodes',
     icon: '📻',
+    category: 'watching',
+  },
+
+  // Series completion milestones
+  [BadgeType.SERIES_COMPLETED_1]: {
+    type: BadgeType.SERIES_COMPLETED_1,
+    displayName: 'Series Finisher',
+    description: 'Completed your first TV series',
+    icon: '📺',
+    category: 'watching',
+  },
+  [BadgeType.SERIES_COMPLETED_5]: {
+    type: BadgeType.SERIES_COMPLETED_5,
+    displayName: 'Series Collector',
+    description: 'Completed 5 TV series',
+    icon: '🎬',
+    category: 'watching',
+  },
+  [BadgeType.SERIES_COMPLETED_10]: {
+    type: BadgeType.SERIES_COMPLETED_10,
+    displayName: 'Series Enthusiast',
+    description: 'Completed 10 TV series',
+    icon: '🏅',
+    category: 'watching',
+  },
+  [BadgeType.SERIES_COMPLETED_25]: {
+    type: BadgeType.SERIES_COMPLETED_25,
+    displayName: 'Series Master',
+    description: 'Completed 25 TV series',
+    icon: '🏆',
+    category: 'watching',
+  },
+  [BadgeType.SERIES_COMPLETED_50]: {
+    type: BadgeType.SERIES_COMPLETED_50,
+    displayName: 'Series Legend',
+    description: 'Completed 50 TV series',
+    icon: '👑',
     category: 'watching',
   },
 
@@ -263,6 +301,12 @@ class BadgeService {
     const specialBadges = await this.checkSpecialBadges(userId);
     newBadges.push(...specialBadges);
 
+    // Check series completion badges
+    const seriesCompletionBadges = await this.checkSeriesCompletionBadges(
+      userId
+    );
+    newBadges.push(...seriesCompletionBadges);
+
     // Check early adopter badge
     const earlyAdopterBadge = await this.checkEarlyAdopterBadge(userId);
     if (earlyAdopterBadge) {
@@ -275,7 +319,10 @@ class BadgeService {
   /**
    * Check if user already has a badge
    */
-  private async hasBadge(userId: number, badgeType: BadgeType): Promise<boolean> {
+  private async hasBadge(
+    userId: number,
+    badgeType: BadgeType
+  ): Promise<boolean> {
     const badgeRepository = getRepository(UserBadge);
     const existing = await badgeRepository.findOne({
       where: { userId, badgeType },
@@ -473,9 +520,12 @@ class BadgeService {
       return badges;
     }
 
-    logger.debug(`User ${userId} has ${likesCount} likes on ${userReviews.length} reviews`, {
-      label: 'Badge Service',
-    });
+    logger.debug(
+      `User ${userId} has ${likesCount} likes on ${userReviews.length} reviews`,
+      {
+        label: 'Badge Service',
+      }
+    );
 
     const milestones = [
       { count: 1, type: BadgeType.REVIEW_LIKES_RECEIVED_1 },
@@ -617,21 +667,50 @@ class BadgeService {
       if (badge) badges.push(badge);
     }
 
-    // Check Completionist: completed 10 series
-    // For now, simplified: count unique series with 10+ episodes watched
-    const seriesCompleted = await watchHistoryRepository
-      .createQueryBuilder('watch')
-      .select('watch.mediaId', 'mediaId')
-      .addSelect('COUNT(DISTINCT CONCAT(watch.seasonNumber, "-", watch.episodeNumber))', 'episodeCount')
-      .where('watch.userId = :userId', { userId })
-      .andWhere('watch.mediaType = :mediaType', { mediaType: MediaType.TV })
-      .groupBy('watch.mediaId')
-      .having('COUNT(DISTINCT CONCAT(watch.seasonNumber, "-", watch.episodeNumber)) >= 10')
-      .getRawMany();
+    // Note: COMPLETIONIST badge is now handled by checkSeriesCompletionBadges()
+    // using the SeriesProgress entity for accurate series completion tracking
 
-    if (seriesCompleted.length >= 10) {
+    return badges;
+  }
+
+  /**
+   * Check series completion badges using SeriesProgress entity
+   */
+  private async checkSeriesCompletionBadges(
+    userId: number
+  ): Promise<UserBadge[]> {
+    const seriesProgressRepository = getRepository(SeriesProgress);
+    const badges: UserBadge[] = [];
+
+    // Count completed series from SeriesProgress table
+    const completedCount = await seriesProgressRepository.count({
+      where: {
+        userId,
+        status: 'completed' as const,
+      },
+    });
+
+    const milestones = [
+      { count: 1, type: BadgeType.SERIES_COMPLETED_1 },
+      { count: 5, type: BadgeType.SERIES_COMPLETED_5 },
+      { count: 10, type: BadgeType.SERIES_COMPLETED_10 },
+      { count: 25, type: BadgeType.SERIES_COMPLETED_25 },
+      { count: 50, type: BadgeType.SERIES_COMPLETED_50 },
+    ];
+
+    for (const milestone of milestones) {
+      if (completedCount >= milestone.count) {
+        const badge = await this.awardBadge(userId, milestone.type, {
+          count: completedCount,
+        });
+        if (badge) badges.push(badge);
+      }
+    }
+
+    // Also award COMPLETIONIST badge at 10 completed series (keeping legacy badge)
+    if (completedCount >= 10) {
       const badge = await this.awardBadge(userId, BadgeType.COMPLETIONIST, {
-        count: seriesCompleted.length,
+        count: completedCount,
       });
       if (badge) badges.push(badge);
     }

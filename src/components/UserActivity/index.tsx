@@ -2,6 +2,7 @@ import BadgeGrid from '@app/components/Badges/BadgeGrid';
 import BadgeProgress from '@app/components/Badges/BadgeProgress';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import PageTitle from '@app/components/Common/PageTitle';
+import { SeriesProgressList } from '@app/components/SeriesProgress';
 import {
   useReviews,
   useTopRated,
@@ -23,6 +24,7 @@ const messages = defineMessages('components.UserActivity', {
   title: 'Activity',
   overview: 'Overview',
   watchHistory: 'Watch History',
+  seriesProgress: 'Series',
   reviews: 'Reviews',
   statistics: 'Statistics',
   badges: 'Badges',
@@ -32,7 +34,7 @@ const messages = defineMessages('components.UserActivity', {
   tvShows: 'TV Shows',
 });
 
-type TabType = 'overview' | 'watch' | 'reviews' | 'stats' | 'badges';
+type TabType = 'overview' | 'watch' | 'series' | 'reviews' | 'stats' | 'badges';
 
 const UserActivity = () => {
   const intl = useIntl();
@@ -47,7 +49,12 @@ const UserActivity = () => {
   // Read tab from URL query parameter
   useEffect(() => {
     const tab = router.query.tab as string;
-    if (tab && ['overview', 'watch', 'reviews', 'stats', 'badges'].includes(tab)) {
+    if (
+      tab &&
+      ['overview', 'watch', 'series', 'reviews', 'stats', 'badges'].includes(
+        tab
+      )
+    ) {
       setActiveTab(tab as TabType);
     }
   }, [router.query.tab]);
@@ -128,6 +135,16 @@ const UserActivity = () => {
             }`}
           >
             {intl.formatMessage(messages.watchHistory)}
+          </button>
+          <button
+            onClick={() => setActiveTab('series')}
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-xs font-medium sm:py-4 sm:text-sm ${
+              activeTab === 'series'
+                ? 'border-indigo-500 text-indigo-500'
+                : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
+            }`}
+          >
+            {intl.formatMessage(messages.seriesProgress)}
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
@@ -214,6 +231,7 @@ const UserActivity = () => {
         {activeTab === 'watch' && (
           <WatchHistoryList data={watchData} isLoading={watchLoading} />
         )}
+        {activeTab === 'series' && <SeriesProgressList take={50} />}
         {activeTab === 'reviews' && (
           <ReviewsList data={reviewsData} isLoading={reviewsLoading} />
         )}
