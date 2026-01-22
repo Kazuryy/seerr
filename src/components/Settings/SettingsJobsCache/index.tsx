@@ -91,6 +91,8 @@ const messages: { [messageName: string]: MessageDescriptor } = defineMessages(
     'process-blacklisted-tags': 'Process Blacklisted Tags',
     'deletion-vote-processor': 'Deletion Vote Processor',
     'calendar-sync': 'Calendar Sync',
+    'top-reviewer-month': 'Top Reviewer of the Month',
+    'top-reviewer-year': 'Top Reviewer of the Year',
     editJobSchedule: 'Modify Job',
     jobScheduleEditSaved: 'Job edited successfully!',
     jobScheduleEditFailed: 'Something went wrong while saving the job.',

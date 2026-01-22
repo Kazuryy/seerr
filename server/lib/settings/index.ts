@@ -367,7 +367,9 @@ export type JobId =
   | 'availability-sync'
   | 'process-blacklisted-tags'
   | 'deletion-vote-processor'
-  | 'calendar-sync';
+  | 'calendar-sync'
+  | 'top-reviewer-month'
+  | 'top-reviewer-year';
 
 export interface AllSettings {
   clientId: string;
@@ -607,6 +609,12 @@ class Settings {
         },
         'calendar-sync': {
           schedule: '*/15 * * * *', // Every 15 minutes
+        },
+        'top-reviewer-month': {
+          schedule: '0 0 2 * * *', // Every day at 2am
+        },
+        'top-reviewer-year': {
+          schedule: '0 0 3 * * *', // Every day at 3am
         },
       },
       network: {

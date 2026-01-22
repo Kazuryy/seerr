@@ -624,7 +624,7 @@ class BadgeService {
     const watchHistoryRepository = getRepository(WatchHistory);
     const badges: UserBadge[] = [];
 
-    // Check Binge Watcher: watched full season in 24h
+    // Check Binge Watcher: watched full season in 24h (excluding manual entries)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -635,6 +635,7 @@ class BadgeService {
       .andWhere('watch.watchedAt >= :yesterday', { yesterday })
       .andWhere('watch.seasonNumber IS NOT NULL')
       .andWhere('watch.episodeNumber IS NOT NULL')
+      .andWhere('watch.isManual = :isManual', { isManual: false })
       .groupBy('watch.mediaId')
       .addGroupBy('watch.seasonNumber')
       .select('watch.mediaId', 'mediaId')
@@ -705,14 +706,6 @@ class BadgeService {
         });
         if (badge) badges.push(badge);
       }
-    }
-
-    // Also award COMPLETIONIST badge at 10 completed series (keeping legacy badge)
-    if (completedCount >= 10) {
-      const badge = await this.awardBadge(userId, BadgeType.COMPLETIONIST, {
-        count: completedCount,
-      });
-      if (badge) badges.push(badge);
     }
 
     return badges;
@@ -789,6 +782,7 @@ class BadgeService {
   async getBadgeProgress(userId: number) {
     const watchHistoryRepository = getRepository(WatchHistory);
     const reviewRepository = getRepository(MediaReview);
+    const seriesProgressRepository = getRepository(SeriesProgress);
 
     // Count movies
     const movieCount = await watchHistoryRepository
@@ -799,14 +793,13 @@ class BadgeService {
       .getRawOne()
       .then((r) => parseInt(r?.count || '0'));
 
-    // Count unique series
-    const seriesCount = await watchHistoryRepository
-      .createQueryBuilder('watch')
-      .select('COUNT(DISTINCT watch.mediaId)', 'count')
-      .where('watch.userId = :userId', { userId })
-      .andWhere('watch.mediaType = :mediaType', { mediaType: MediaType.TV })
-      .getRawOne()
-      .then((r) => parseInt(r?.count || '0'));
+    // Count completed series (using SeriesProgress for consistency with badges)
+    const seriesCount = await seriesProgressRepository.count({
+      where: {
+        userId,
+        status: 'completed' as const,
+      },
+    });
 
     // Count episodes
     const episodeCount = await watchHistoryRepository.count({

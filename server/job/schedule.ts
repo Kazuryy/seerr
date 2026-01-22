@@ -2,6 +2,10 @@ import { MediaServerType } from '@server/constants/server';
 import blacklistedTagsProcessor from '@server/job/blacklistedTagsProcessor';
 import { calendarSync } from '@server/job/calendarSync';
 import deletionVoteProcessor from '@server/job/deletionVoteProcessor';
+import {
+  awardTopReviewerMonth,
+  awardTopReviewerYear,
+} from '@server/job/topReviewerBadges';
 import availabilitySync from '@server/lib/availabilitySync';
 import downloadTracker from '@server/lib/downloadtracker';
 import ImageProxy from '@server/lib/imageproxy';
@@ -294,6 +298,36 @@ export const startJobs = (): void => {
         label: 'Jobs',
       });
       calendarSync();
+    }),
+  });
+
+  // Award Top Reviewer of the Month badge (daily at 2am)
+  scheduledJobs.push({
+    id: 'top-reviewer-month',
+    name: 'Top Reviewer of the Month',
+    type: 'command',
+    interval: 'hours',
+    cronSchedule: jobs['top-reviewer-month'].schedule,
+    job: schedule.scheduleJob(jobs['top-reviewer-month'].schedule, () => {
+      logger.info('Starting scheduled job: Top Reviewer of the Month', {
+        label: 'Jobs',
+      });
+      awardTopReviewerMonth();
+    }),
+  });
+
+  // Award Top Reviewer of the Year badge (daily at 3am)
+  scheduledJobs.push({
+    id: 'top-reviewer-year',
+    name: 'Top Reviewer of the Year',
+    type: 'command',
+    interval: 'hours',
+    cronSchedule: jobs['top-reviewer-year'].schedule,
+    job: schedule.scheduleJob(jobs['top-reviewer-year'].schedule, () => {
+      logger.info('Starting scheduled job: Top Reviewer of the Year', {
+        label: 'Jobs',
+      });
+      awardTopReviewerYear();
     }),
   });
 
