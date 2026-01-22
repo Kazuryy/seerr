@@ -2655,13 +2655,46 @@ trackingRoutes.get(
         req.query
       );
 
-      const { results, totalCount } =
+      // Check if user has series progress entries
+      let { results, totalCount } =
         await seriesProgressService.getUserSeriesProgress(user.id, {
           status,
           sortBy,
           limit: take,
           offset: skip,
         });
+
+      // If no progress entries but user has TV watch history, trigger recalculation
+      if (totalCount === 0 && skip === 0) {
+        const watchHistoryRepo = getRepository(WatchHistory);
+        const tvWatchCount = await watchHistoryRepo.count({
+          where: {
+            userId: user.id,
+            mediaType: MediaType.TV,
+          },
+        });
+
+        if (tvWatchCount > 0) {
+          logger.info(
+            `Auto-recalculating series progress for user ${user.id} (has ${tvWatchCount} TV watches but no progress entries)`,
+            { label: 'Tracking Routes' }
+          );
+
+          // Recalculate synchronously for first request
+          await seriesProgressService.recalculateAllProgress(user.id);
+
+          // Fetch the newly calculated progress
+          const recalculated =
+            await seriesProgressService.getUserSeriesProgress(user.id, {
+              status,
+              sortBy,
+              limit: take,
+              offset: skip,
+            });
+          results = recalculated.results;
+          totalCount = recalculated.totalCount;
+        }
+      }
 
       return res.status(200).json({
         pageInfo: {
