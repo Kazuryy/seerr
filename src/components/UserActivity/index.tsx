@@ -31,7 +31,7 @@ const messages = defineMessages('components.UserActivity', {
   noActivity: 'No activity yet',
   allMedia: 'All',
   movies: 'Movies',
-  tvShows: 'TV Shows',
+  tvShows: 'Series',
 });
 
 type TabType = 'overview' | 'watch' | 'series' | 'reviews' | 'stats' | 'badges';

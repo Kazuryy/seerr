@@ -9,7 +9,7 @@ import ReviewCard from './ReviewCard';
 const messages = defineMessages('components.Community.CommunityFeed', {
   allMedia: 'All',
   movies: 'Movies',
-  tvShows: 'TV Shows',
+  tvShows: 'Series',
   latest: 'Latest',
   top: 'Top',
   noReviews: 'No reviews yet',

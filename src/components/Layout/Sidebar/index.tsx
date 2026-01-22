@@ -81,16 +81,16 @@ const SidebarLinks: SidebarLinkProps[] = [
     activeRegExp: /^\/discover\/tv$/,
   },
   {
-    href: '/calendar',
-    messagesKey: 'calendar',
-    svgIcon: <CalendarIcon className="mr-3 h-6 w-6" />,
-    activeRegExp: /^\/calendar/,
-  },
-  {
     href: '/tracking',
     messagesKey: 'tracking',
     svgIcon: <ChartBarIcon className="mr-3 h-6 w-6" />,
     activeRegExp: /^\/tracking|^\/activity|^\/community|^\/users\/[^/]+\/activity/,
+  },
+  {
+    href: '/calendar',
+    messagesKey: 'calendar',
+    svgIcon: <CalendarIcon className="mr-3 h-6 w-6" />,
+    activeRegExp: /^\/calendar/,
   },
   {
     href: '/requests',

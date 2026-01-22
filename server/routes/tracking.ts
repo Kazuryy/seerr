@@ -1751,6 +1751,17 @@ function getWeekStart(date: Date): Date {
 }
 
 /**
+ * Helper function to format a date as YYYY-MM-DD in local time
+ * (avoids timezone issues with toISOString which uses UTC)
+ */
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * GET /api/v1/tracking/stats/:userId/activity-chart
  * Get daily watch activity for the last 3 months
  * NOTE: This route must be defined BEFORE /stats/:userId to avoid route conflicts
@@ -1806,7 +1817,7 @@ trackingRoutes.get<{ userId: string }>(
         const currentDate = new Date(threeMonthsAgo);
         while (currentDate <= today) {
           const weekStart = getWeekStart(currentDate);
-          const weekKey = weekStart.toISOString().split('T')[0];
+          const weekKey = formatLocalDate(weekStart);
           if (!activityMap.has(weekKey)) {
             activityMap.set(weekKey, { movies: 0, episodes: 0, total: 0 });
           }
@@ -1816,7 +1827,7 @@ trackingRoutes.get<{ userId: string }>(
         // Initialize days
         const currentDate = new Date(threeMonthsAgo);
         while (currentDate <= today) {
-          const dateKey = currentDate.toISOString().split('T')[0];
+          const dateKey = formatLocalDate(currentDate);
           activityMap.set(dateKey, { movies: 0, episodes: 0, total: 0 });
           currentDate.setDate(currentDate.getDate() + 1);
         }
@@ -1829,9 +1840,9 @@ trackingRoutes.get<{ userId: string }>(
 
         if (view === 'weekly') {
           const weekStart = getWeekStart(watchDate);
-          dateKey = weekStart.toISOString().split('T')[0];
+          dateKey = formatLocalDate(weekStart);
         } else {
-          dateKey = watchDate.toISOString().split('T')[0];
+          dateKey = formatLocalDate(watchDate);
         }
 
         const entry = activityMap.get(dateKey);
@@ -2106,14 +2117,21 @@ trackingRoutes.get<{ userId: string }>(
       const reviewRepository = getRepository(MediaReview);
 
       // Get watch counts
-      const [movieWatchCount, tvWatchCount, totalWatchCount] =
+      const [movieWatchCount, uniqueSeriesCount, totalWatchCount] =
         await Promise.all([
           watchHistoryRepository.count({
             where: { userId, mediaType: MediaType.MOVIE },
           }),
-          watchHistoryRepository.count({
-            where: { userId, mediaType: MediaType.TV },
-          }),
+          // Count unique TV series (distinct mediaId)
+          watchHistoryRepository
+            .createQueryBuilder('watch')
+            .select('COUNT(DISTINCT watch.mediaId)', 'count')
+            .where('watch.userId = :userId', { userId })
+            .andWhere('watch.mediaType = :mediaType', {
+              mediaType: MediaType.TV,
+            })
+            .getRawOne()
+            .then((r) => parseInt(r?.count || '0')),
           watchHistoryRepository.count({
             where: { userId },
           }),
@@ -2154,7 +2172,7 @@ trackingRoutes.get<{ userId: string }>(
         watchStats: {
           totalWatches: totalWatchCount,
           movieWatches: movieWatchCount,
-          tvWatches: tvWatchCount,
+          tvWatches: uniqueSeriesCount,
           episodeWatches: episodeCount,
         },
         reviewStats: {

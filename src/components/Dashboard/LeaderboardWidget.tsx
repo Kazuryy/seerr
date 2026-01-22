@@ -1,21 +1,23 @@
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import { useLeaderboard } from '@app/hooks/useCommunity';
 import defineMessages from '@app/utils/defineMessages';
+import { EyeIcon } from '@heroicons/react/24/outline';
 import { TrophyIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
 
 const messages = defineMessages('components.Dashboard.LeaderboardWidget', {
-  leaderboard: 'Top Contributors',
+  leaderboard: 'Top Watchers',
   viewAll: 'View All',
   noData: 'No data yet',
+  watchCount: '{count, plural, one {# watch} other {# watches}}',
 });
 
 const LeaderboardWidget = () => {
   const intl = useIntl();
   const { data, isLoading } = useLeaderboard({
     period: 'month',
-    metric: 'reviews',
+    metric: 'watches',
     limit: 5,
   });
 
@@ -30,7 +32,7 @@ const LeaderboardWidget = () => {
     <div className="rounded-lg border border-gray-700 bg-gray-800 p-4">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center">
-          <TrophyIcon className="mr-2 h-5 w-5 text-yellow-500" />
+          <EyeIcon className="mr-2 h-5 w-5 text-indigo-400" />
           <h3 className="text-lg font-semibold text-white">
             {intl.formatMessage(messages.leaderboard)}
           </h3>
@@ -73,7 +75,9 @@ const LeaderboardWidget = () => {
                 </span>
               </div>
               <span className="text-sm font-semibold text-indigo-400">
-                {entry.value}
+                {intl.formatMessage(messages.watchCount, {
+                  count: entry.value,
+                })}
               </span>
             </Link>
           ))}

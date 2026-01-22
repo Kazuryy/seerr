@@ -14,7 +14,7 @@ const messages = defineMessages('components.UserActivity', {
   reviewStatistics: 'Review Statistics',
   totalWatches: 'Total Watches',
   movieWatches: 'Movies',
-  tvWatches: 'TV Shows',
+  tvWatches: 'Series',
   episodeWatches: 'Episodes',
   totalReviews: 'Total Reviews',
   publicReviews: 'Public',

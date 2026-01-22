@@ -6,6 +6,7 @@ export interface SeriesProgress {
   tmdbId: number;
   title?: string;
   posterPath?: string;
+  backdropPath?: string;
   watchedEpisodes: number;
   totalEpisodes: number;
   totalSeasons: number;

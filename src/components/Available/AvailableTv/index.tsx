@@ -11,7 +11,7 @@ import { useRouter } from 'next/router';
 import { useIntl } from 'react-intl';
 
 const messages = defineMessages('components.Available.AvailableTv', {
-  availabletv: 'Available TV Shows',
+  availabletv: 'Available Series',
   sortPopularityDesc: 'Popularity',
   sortFirstAirDateDesc: 'First Air Date',
   sortMediaAddedDesc: 'Recently Added',

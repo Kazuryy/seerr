@@ -102,35 +102,35 @@ export const BADGE_DEFINITIONS: Record<BadgeType, BadgeDefinition> = {
   [BadgeType.SERIES_COMPLETED_1]: {
     type: BadgeType.SERIES_COMPLETED_1,
     displayName: 'Series Finisher',
-    description: 'Completed your first TV series',
+    description: 'Completed your first series',
     icon: '📺',
     category: 'watching',
   },
   [BadgeType.SERIES_COMPLETED_5]: {
     type: BadgeType.SERIES_COMPLETED_5,
     displayName: 'Series Collector',
-    description: 'Completed 5 TV series',
+    description: 'Completed 5 series',
     icon: '🎬',
     category: 'watching',
   },
   [BadgeType.SERIES_COMPLETED_10]: {
     type: BadgeType.SERIES_COMPLETED_10,
     displayName: 'Series Enthusiast',
-    description: 'Completed 10 TV series',
+    description: 'Completed 10 series',
     icon: '🏅',
     category: 'watching',
   },
   [BadgeType.SERIES_COMPLETED_25]: {
     type: BadgeType.SERIES_COMPLETED_25,
     displayName: 'Series Master',
-    description: 'Completed 25 TV series',
+    description: 'Completed 25 series',
     icon: '🏆',
     category: 'watching',
   },
   [BadgeType.SERIES_COMPLETED_50]: {
     type: BadgeType.SERIES_COMPLETED_50,
     displayName: 'Series Legend',
-    description: 'Completed 50 TV series',
+    description: 'Completed 50 series',
     icon: '👑',
     category: 'watching',
   },
@@ -799,6 +799,15 @@ class BadgeService {
       .getRawOne()
       .then((r) => parseInt(r?.count || '0'));
 
+    // Count unique series
+    const seriesCount = await watchHistoryRepository
+      .createQueryBuilder('watch')
+      .select('COUNT(DISTINCT watch.mediaId)', 'count')
+      .where('watch.userId = :userId', { userId })
+      .andWhere('watch.mediaType = :mediaType', { mediaType: MediaType.TV })
+      .getRawOne()
+      .then((r) => parseInt(r?.count || '0'));
+
     // Count episodes
     const episodeCount = await watchHistoryRepository.count({
       where: { userId, mediaType: MediaType.TV },
@@ -811,6 +820,7 @@ class BadgeService {
 
     return {
       movies: movieCount,
+      series: seriesCount,
       episodes: episodeCount,
       reviews: reviewCount,
     };

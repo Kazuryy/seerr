@@ -18,6 +18,7 @@ export interface UserBadge extends BadgeDefinition {
 
 export interface BadgeProgress {
   movies: number;
+  series: number;
   episodes: number;
   reviews: number;
 }

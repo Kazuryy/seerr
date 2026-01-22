@@ -90,7 +90,7 @@ export const sliderTitles = defineMessages('components.Discover', {
   tmdbtvstreamingservices: 'TMDB TV Streaming Services',
   votingnow: 'Leaving Soon',
   availablemovies: 'Available Movies',
-  availabletv: 'Available TV Shows',
+  availabletv: 'Available Series',
   expiringsooon: 'Leaving Soon',
   jellyfinwatchlist: 'Your Watchlist',
   todaysreleases: "Today's Releases",

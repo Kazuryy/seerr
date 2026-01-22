@@ -173,7 +173,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           >
             <option value="all">All Types</option>
             <option value="movie">Movies</option>
-            <option value="tv">TV Shows</option>
+            <option value="tv">Series</option>
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
             <svg

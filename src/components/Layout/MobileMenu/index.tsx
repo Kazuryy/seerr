@@ -101,18 +101,18 @@ const MobileMenu = ({
       activeRegExp: /^\/discover\/tv$/,
     },
     {
-      href: '/calendar',
-      content: intl.formatMessage(menuMessages.calendar),
-      svgIcon: <CalendarIcon className="h-6 w-6" />,
-      svgIconSelected: <FilledCalendarIcon className="h-6 w-6" />,
-      activeRegExp: /^\/calendar/,
-    },
-    {
       href: '/tracking',
       content: intl.formatMessage(menuMessages.tracking),
       svgIcon: <ChartBarIcon className="h-6 w-6" />,
       svgIconSelected: <FilledChartBarIcon className="h-6 w-6" />,
       activeRegExp: /^\/tracking|^\/activity|^\/community|^\/users\/[^/]+\/activity/,
+    },
+    {
+      href: '/calendar',
+      content: intl.formatMessage(menuMessages.calendar),
+      svgIcon: <CalendarIcon className="h-6 w-6" />,
+      svgIconSelected: <FilledCalendarIcon className="h-6 w-6" />,
+      activeRegExp: /^\/calendar/,
     },
     {
       href: '/requests',

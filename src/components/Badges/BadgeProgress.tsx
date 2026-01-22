@@ -7,6 +7,7 @@ import { useIntl } from 'react-intl';
 const messages = defineMessages('components.Badges.BadgeProgress', {
   yourProgress: 'Your Progress',
   moviesWatched: 'Movies Watched',
+  seriesWatched: 'Series Watched',
   episodesWatched: 'Episodes Watched',
   reviewsWritten: 'Reviews Written',
   nextBadge: 'Next badge at {target}',
@@ -38,6 +39,7 @@ const BadgeProgress = ({ userId }: BadgeProgressProps) => {
 
   // Define milestones for each category
   const movieMilestones = [10, 50, 100, 250, 500, 1000];
+  const seriesMilestones = [5, 10, 25, 50, 100, 250];
   const episodeMilestones = [100, 500, 1000, 5000];
   const reviewMilestones = [1, 10, 50, 100];
 
@@ -47,6 +49,10 @@ const BadgeProgress = ({ userId }: BadgeProgressProps) => {
   };
 
   const nextMovieMilestone = findNextMilestone(progress.movies, movieMilestones);
+  const nextSeriesMilestone = findNextMilestone(
+    progress.series,
+    seriesMilestones
+  );
   const nextEpisodeMilestone = findNextMilestone(
     progress.episodes,
     episodeMilestones
@@ -69,10 +75,17 @@ const BadgeProgress = ({ userId }: BadgeProgressProps) => {
       color: 'from-blue-600 to-blue-400',
     },
     {
+      label: intl.formatMessage(messages.seriesWatched),
+      current: progress.series,
+      next: nextSeriesMilestone,
+      icon: '📺',
+      color: 'from-indigo-600 to-indigo-400',
+    },
+    {
       label: intl.formatMessage(messages.episodesWatched),
       current: progress.episodes,
       next: nextEpisodeMilestone,
-      icon: '📺',
+      icon: '🎞️',
       color: 'from-purple-600 to-purple-400',
     },
     {

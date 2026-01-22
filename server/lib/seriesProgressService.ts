@@ -18,6 +18,7 @@ interface SeriesProgressResult {
 interface SeriesProgressWithDetails extends SeriesProgress {
   title?: string;
   posterPath?: string;
+  backdropPath?: string;
 }
 
 class SeriesProgressService {
@@ -301,12 +302,14 @@ class SeriesProgressService {
             ...progress,
             title: tvShow.name,
             posterPath: tvShow.poster_path || undefined,
+            backdropPath: tvShow.backdrop_path || undefined,
           };
         } catch {
           return {
             ...progress,
             title: undefined,
             posterPath: undefined,
+            backdropPath: undefined,
           };
         }
       })
