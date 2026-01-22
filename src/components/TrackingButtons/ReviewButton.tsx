@@ -17,6 +17,7 @@ interface ReviewButtonProps {
   seasonNumber?: number;
   episodeNumber?: number;
   onUpdate?: () => void;
+  compact?: boolean; // Smaller button for inline use
 }
 
 const messages = defineMessages('components.TrackingButtons', {
@@ -32,6 +33,7 @@ const ReviewButton = ({
   seasonNumber,
   episodeNumber,
   onUpdate,
+  compact = false,
 }: ReviewButtonProps) => {
   const intl = useIntl();
   const { user } = useUser();
@@ -64,11 +66,12 @@ const ReviewButton = ({
       >
         <Button
           onClick={() => setShowModal(true)}
-          className="mr-2"
+          className={compact ? '' : 'mr-2'}
           buttonType={hasReview ? 'success' : 'ghost'}
+          buttonSize={compact ? 'sm' : 'default'}
         >
-          <PencilSquareIcon />
-          {hasReview && myReview.rating && (
+          <PencilSquareIcon className={compact ? 'h-4 w-4' : ''} />
+          {hasReview && myReview.rating && !compact && (
             <span className="ml-1 text-sm font-bold">{myReview.rating}/10</span>
           )}
         </Button>

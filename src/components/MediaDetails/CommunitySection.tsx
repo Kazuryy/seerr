@@ -2,18 +2,15 @@ import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import type { MediaType } from '@app/hooks/useTracking';
 import { useReviews } from '@app/hooks/useTracking';
 import defineMessages from '@app/utils/defineMessages';
-import { ChatBubbleLeftIcon, StarIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/solid';
 import { useMemo } from 'react';
 import { useIntl } from 'react-intl';
 
 const messages = defineMessages('components.MediaDetails.CommunitySection', {
   communityTitle: 'Community',
-  averageRating: 'Average Rating',
-  reviews: '{count, plural, =0 {No reviews} one {# review} other {# reviews}}',
-  viewAllReviews: 'View all reviews',
-  noRatingsYet: 'No ratings yet',
-  beTheFirst: 'Be the first to rate this!',
+  reviews: '{count} review{count, plural, one {} other {s}}',
+  noReviews: 'No reviews yet',
 });
 
 interface CommunitySectionProps {
@@ -28,7 +25,7 @@ const CommunitySection = ({ mediaId, mediaType }: CommunitySectionProps) => {
     mediaId,
     mediaType,
     isPublic: true,
-    take: 100, // Fetch enough to calculate accurate average
+    take: 100,
   });
 
   const stats = useMemo(() => {
@@ -55,69 +52,43 @@ const CommunitySection = ({ mediaId, mediaType }: CommunitySectionProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center rounded-lg bg-gray-800 p-6">
+      <div className="flex h-28 w-48 items-center justify-center rounded-lg border border-gray-700 bg-gray-800">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="h-full rounded-lg border border-gray-700 bg-gray-800 p-6 shadow-lg">
-      <h3 className="mb-4 flex items-center text-xl font-bold text-white">
-        <ChatBubbleLeftIcon className="mr-2 h-6 w-6" />
-        {intl.formatMessage(messages.communityTitle)}
-      </h3>
-
-      <div className="space-y-4">
-        {/* Average Rating */}
-        {stats.hasRatings ? (
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-1">
-              <StarIcon className="h-8 w-8 fill-yellow-400 text-yellow-400" />
-              <span className="text-3xl font-bold text-white">
-                {stats.averageRating}
-              </span>
-              <span className="text-lg text-gray-400">/10</span>
-            </div>
-            <div className="text-sm text-gray-400">
-              {intl.formatMessage(messages.averageRating)}
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center space-x-3 text-gray-400">
-            <StarIcon className="h-8 w-8" />
-            <div>
-              <p className="text-sm font-medium">
-                {intl.formatMessage(messages.noRatingsYet)}
-              </p>
-              <p className="text-xs">
-                {intl.formatMessage(messages.beTheFirst)}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Review Count */}
-        <div className="flex items-center justify-between border-t border-gray-700 pt-4">
-          <div className="flex items-center space-x-2">
-            <ChatBubbleLeftIcon className="h-5 w-5 text-gray-400" />
-            <span className="text-gray-300">
-              {intl.formatMessage(messages.reviews, {
-                count: stats.totalReviews,
-              })}
-            </span>
-          </div>
-
-          {stats.totalReviews > 0 && (
-            <Link
-              href={`/reviews?mediaId=${mediaId}&mediaType=${mediaType}`}
-              className="text-sm font-medium text-indigo-400 transition-colors hover:text-indigo-300"
-            >
-              {intl.formatMessage(messages.viewAllReviews)} →
-            </Link>
-          )}
-        </div>
+    <div className="flex w-48 flex-col rounded-lg border border-gray-700 bg-gray-800 p-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 text-gray-400">
+        <ChatBubbleLeftIcon className="h-5 w-5" />
+        <span className="text-sm font-medium">
+          {intl.formatMessage(messages.communityTitle)}
+        </span>
       </div>
+
+      {/* Rating */}
+      <div className="mt-3 flex items-center gap-2">
+        {stats.hasRatings ? (
+          <>
+            <StarIcon className="h-6 w-6 text-yellow-400" />
+            <span className="text-2xl font-bold text-white">
+              {stats.averageRating}
+              <span className="text-base font-normal text-gray-400">/10</span>
+            </span>
+          </>
+        ) : (
+          <span className="text-base text-gray-500">—</span>
+        )}
+      </div>
+
+      {/* Review count */}
+      <span className="mt-2 text-sm text-gray-500">
+        {stats.totalReviews > 0
+          ? intl.formatMessage(messages.reviews, { count: stats.totalReviews })
+          : intl.formatMessage(messages.noReviews)}
+      </span>
     </div>
   );
 };

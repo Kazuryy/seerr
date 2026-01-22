@@ -93,16 +93,23 @@ class SeriesProgressService {
     // Determine status
     let status: SeriesProgressStatus = 'not_started';
     let completedAt: Date | null = null;
+    let shouldIncrementCompletionCount = false;
+
+    const isNowCompleted =
+      watchedEpisodes >= tmdbData.totalEpisodes &&
+      tmdbData.totalEpisodes > 0 &&
+      !tmdbData.isOngoing;
 
     if (watchedEpisodes === 0) {
       status = 'not_started';
-    } else if (
-      watchedEpisodes >= tmdbData.totalEpisodes &&
-      tmdbData.totalEpisodes > 0 &&
-      !tmdbData.isOngoing
-    ) {
+    } else if (isNowCompleted) {
       status = 'completed';
       completedAt = new Date();
+      // Increment completion count only if transitioning to completed for the first time
+      // or if we're completing again after more episodes were added
+      if (progress?.status !== 'completed') {
+        shouldIncrementCompletionCount = true;
+      }
     } else if (watchedEpisodes > 0) {
       status = 'in_progress';
     }
@@ -129,6 +136,9 @@ class SeriesProgressService {
       if (completedAt && !progress.completedAt) {
         progress.completedAt = completedAt;
       }
+      if (shouldIncrementCompletionCount) {
+        progress.completionCount = (progress.completionCount || 0) + 1;
+      }
     } else {
       // Create new progress
       progress = new SeriesProgress({
@@ -143,6 +153,7 @@ class SeriesProgressService {
         isOngoing: tmdbData.isOngoing,
         completedAt,
         lastWatchedAt: new Date(),
+        completionCount: shouldIncrementCompletionCount ? 1 : 0,
       });
     }
 

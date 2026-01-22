@@ -6094,6 +6094,301 @@ paths:
         '403':
           description: Only administrators can seed test data
 
+  /tracking/series/{tmdbId}/season/{seasonNumber}/status:
+    get:
+      summary: Get watch status for a specific season
+      description: Returns the watch status for a specific season of a TV series, including watched episodes, manual entries, and completion status.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: number
+          description: The TMDB ID of the series
+        - in: path
+          name: seasonNumber
+          required: true
+          schema:
+            type: number
+          description: The season number (0 for specials)
+      responses:
+        '200':
+          description: Season watch status returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  watchedEpisodes:
+                    type: number
+                  manualEpisodes:
+                    type: number
+                  totalEpisodes:
+                    type: number
+                  isComplete:
+                    type: boolean
+                  hasManualEntries:
+                    type: boolean
+        '400':
+          description: Invalid TMDB ID or season number
+
+  /tracking/series/{tmdbId}/mark-season:
+    post:
+      summary: Mark an entire season as watched
+      description: Marks all episodes of a season as watched. Creates manual watch history entries that don't count towards community stats.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: number
+          description: The TMDB ID of the series
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - seasonNumber
+              properties:
+                seasonNumber:
+                  type: number
+                  description: The season number to mark as watched (0 for specials)
+                watchedAt:
+                  type: string
+                  format: date-time
+                  description: Optional date when the season was watched
+      responses:
+        '200':
+          description: Season marked as watched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  markedEpisodes:
+                    type: number
+                  skippedEpisodes:
+                    type: number
+                  totalEpisodes:
+                    type: number
+        '400':
+          description: Invalid request body or TMDB ID
+
+  /tracking/series/{tmdbId}/mark-season/{seasonNumber}:
+    delete:
+      summary: Unmark a season as watched
+      description: Removes only manual watch history entries for a season. Real watch entries from media server sync are preserved.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: number
+          description: The TMDB ID of the series
+        - in: path
+          name: seasonNumber
+          required: true
+          schema:
+            type: number
+          description: The season number to unmark
+      responses:
+        '200':
+          description: Season unmarked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  deletedCount:
+                    type: number
+        '400':
+          description: Invalid TMDB ID or season number
+
+  /tracking/series/{tmdbId}/mark-episode:
+    post:
+      summary: Mark a single episode as watched
+      description: Marks a single episode as watched. Creates a manual watch history entry that doesn't count towards community stats.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: number
+          description: The TMDB ID of the series
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - seasonNumber
+                - episodeNumber
+              properties:
+                seasonNumber:
+                  type: number
+                  description: The season number
+                episodeNumber:
+                  type: number
+                  description: The episode number
+                watchedAt:
+                  type: string
+                  format: date-time
+                  description: Optional date when the episode was watched
+      responses:
+        '200':
+          description: Episode marked as watched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  marked:
+                    type: boolean
+                  alreadyWatched:
+                    type: boolean
+        '400':
+          description: Invalid request body or TMDB ID
+
+  /tracking/series/{tmdbId}/mark-episodes:
+    post:
+      summary: Mark multiple episodes as watched
+      description: Marks multiple episodes as watched at once. Creates manual watch history entries that don't count towards community stats.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: number
+          description: The TMDB ID of the series
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - episodes
+              properties:
+                episodes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - seasonNumber
+                      - episodeNumber
+                    properties:
+                      seasonNumber:
+                        type: number
+                      episodeNumber:
+                        type: number
+                watchedAt:
+                  type: string
+                  format: date-time
+                  description: Optional date when the episodes were watched
+      responses:
+        '200':
+          description: Episodes marked as watched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  markedEpisodes:
+                    type: number
+                  skippedEpisodes:
+                    type: number
+        '400':
+          description: Invalid request body or TMDB ID
+
+  /tracking/series/{tmdbId}/mark-episode/{seasonNumber}/{episodeNumber}:
+    delete:
+      summary: Unmark a single episode as watched
+      description: Removes only the manual watch history entry for an episode. Real watch entries from media server sync are preserved.
+      tags:
+        - tracking
+      security:
+        - cookieAuth: []
+        - apiKey: []
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: number
+          description: The TMDB ID of the series
+        - in: path
+          name: seasonNumber
+          required: true
+          schema:
+            type: number
+          description: The season number
+        - in: path
+          name: episodeNumber
+          required: true
+          schema:
+            type: number
+          description: The episode number
+      responses:
+        '200':
+          description: Episode unmarked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  deleted:
+                    type: boolean
+        '400':
+          description: Invalid TMDB ID, season number, or episode number
+
   /tracking/series/{mediaId}/progress:
     get:
       summary: Get series progress for a specific media

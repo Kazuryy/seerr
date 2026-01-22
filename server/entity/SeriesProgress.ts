@@ -62,6 +62,9 @@ export class SeriesProgress {
   @Column({ type: 'boolean', default: false })
   public isOngoing: boolean;
 
+  @Column({ type: 'integer', default: 0 })
+  public completionCount: number;
+
   @DbAwareColumn({ type: 'datetime', nullable: true })
   public completedAt: Date | null;
 

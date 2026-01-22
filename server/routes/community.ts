@@ -117,7 +117,7 @@ communityRoutes.get(
           })
         );
       } else if (metric === 'watches') {
-        // Most active watchers
+        // Most active watchers (excluding manual entries)
         const watchHistoryRepository = getRepository(WatchHistory);
         const userRepository = getRepository(User);
 
@@ -126,6 +126,7 @@ communityRoutes.get(
           .select('watch.userId', 'userId')
           .addSelect('COUNT(watch.id)', 'value')
           .where('watch.watchedAt >= :startDate', { startDate })
+          .andWhere('watch.isManual = :isManual', { isManual: false })
           .groupBy('watch.userId')
           .orderBy('value', 'DESC')
           .limit(limit)
@@ -202,23 +203,25 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
       totalReviews,
       avgRating,
     ] = await Promise.all([
-      // Total users who have tracked at least one media
+      // Total users who have tracked at least one media (excluding manual entries)
       watchHistoryRepository
         .createQueryBuilder('watch')
         .select('COUNT(DISTINCT watch.userId)', 'count')
+        .where('watch.isManual = :isManual', { isManual: false })
         .getRawOne()
         .then((r) => parseInt(r?.count || '0')),
 
-      // Active users this month
+      // Active users this month (excluding manual entries)
       watchHistoryRepository
         .createQueryBuilder('watch')
         .select('COUNT(DISTINCT watch.userId)', 'count')
         .where('watch.watchedAt >= :oneMonthAgo', { oneMonthAgo })
+        .andWhere('watch.isManual = :isManual', { isManual: false })
         .getRawOne()
         .then((r) => parseInt(r?.count || '0')),
 
-      // Total watches
-      watchHistoryRepository.count(),
+      // Total watches (excluding manual entries)
+      watchHistoryRepository.count({ where: { isManual: false } }),
 
       // Total public reviews
       reviewRepository.count({
@@ -235,7 +238,7 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
         .then((r) => (r?.avgRating ? parseFloat(r.avgRating) : undefined)),
     ]);
 
-    // Get most watched this week
+    // Get most watched this week (excluding manual entries)
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -248,6 +251,7 @@ communityRoutes.get('/stats', isAuthenticated(), async (req, res, next) => {
       .addSelect('COUNT(watch.id)', 'watchCount')
       .leftJoin('watch.media', 'media')
       .where('watch.watchedAt >= :oneWeekAgo', { oneWeekAgo })
+      .andWhere('watch.isManual = :isManual', { isManual: false })
       .groupBy('watch.mediaId')
       .addGroupBy('media.id')
       .addGroupBy('media.tmdbId')

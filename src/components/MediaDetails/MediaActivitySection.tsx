@@ -1,45 +1,34 @@
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import { ReviewButton } from '@app/components/TrackingButtons';
 import { useMediaActivity } from '@app/hooks/useMediaActivity';
+import { useSeriesProgress } from '@app/hooks/useSeriesProgress';
 import type { MediaType } from '@app/hooks/useWatchHistory';
 import defineMessages from '@app/utils/defineMessages';
-import {
-  ChatBubbleLeftIcon,
-  EyeIcon,
-  StarIcon,
-} from '@heroicons/react/24/outline';
+import { EyeIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, StarIcon } from '@heroicons/react/24/solid';
 import { useIntl } from 'react-intl';
 
 const messages = defineMessages(
   'components.MediaDetails.MediaActivitySection',
   {
     yourActivity: 'Your Activity',
-    watched: 'Watched {count, plural, one {# time} other {# times}}',
-    lastWatched: 'Last: {date}',
-    yourRating: 'Your rating: {rating}/10',
-    private: 'Private',
-    public: 'Public',
-    containsSpoilers: 'Contains spoilers',
-    editInMyActivity: 'Edit in My Activity',
-    community: 'Community',
-    averageRating: '{rating}/10',
-    totalRatings: '{count, plural, one {# rating} other {# ratings}}',
-    totalReviews: '{count, plural, one {# review} other {# reviews}}',
-    viewCommunityReviews: 'View community reviews',
-    notWatchedYet: 'Not watched yet',
-    markAsWatched: 'Mark as Watched',
+    watched: 'Watched {count}x',
+    watching: 'Watching',
+    notWatched: 'Not watched',
   }
 );
 
 interface MediaActivitySectionProps {
   tmdbId: number;
   mediaType: MediaType;
+  mediaId?: number; // Internal media ID for series completion count
   onUpdate?: () => void;
 }
 
 const MediaActivitySection = ({
   tmdbId,
   mediaType,
+  mediaId,
   onUpdate,
 }: MediaActivitySectionProps) => {
   const intl = useIntl();
@@ -52,6 +41,11 @@ const MediaActivitySection = ({
     mediaType,
   });
 
+  // Get series progress for completion count (TV only)
+  const { data: seriesProgress } = useSeriesProgress(
+    mediaType === 'tv' ? mediaId : undefined
+  );
+
   const handleReviewUpdate = () => {
     mutate();
     onUpdate?.();
@@ -59,7 +53,7 @@ const MediaActivitySection = ({
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center rounded-lg border border-gray-700 bg-gray-800 p-6">
+      <div className="flex h-28 w-52 items-center justify-center rounded-lg border border-gray-700 bg-gray-800">
         <LoadingSpinner />
       </div>
     );
@@ -68,98 +62,55 @@ const MediaActivitySection = ({
   const hasActivity = activity && activity.watchCount > 0;
 
   return (
-    <div className="h-full overflow-hidden rounded-lg border border-gray-700 bg-gray-800 p-6">
-      <h3 className="mb-4 flex items-center text-lg font-bold text-white">
-        <EyeIcon className="mr-2 h-5 w-5" />
-        {intl.formatMessage(messages.yourActivity)}
-      </h3>
+    <div className="flex w-52 flex-col rounded-lg border border-gray-700 bg-gray-800 p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-gray-400">
+          <EyeIcon className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            {intl.formatMessage(messages.yourActivity)}
+          </span>
+        </div>
+        <ReviewButton
+          tmdbId={tmdbId}
+          mediaType={mediaType}
+          onUpdate={handleReviewUpdate}
+          compact
+        />
+      </div>
 
       {hasActivity ? (
-        <div className="space-y-3">
-          {/* Watch count and last watched */}
-          <div className="flex items-center text-sm text-gray-300">
-            <span className="font-medium">
-              ✅{' '}
-              {intl.formatMessage(messages.watched, {
-                count: activity.watchCount,
-              })}
+        <div className="mt-3 flex flex-col gap-2">
+          {/* Watch count - for TV use completionCount, for movies use watchCount */}
+          <div className="flex items-center gap-2 text-green-400">
+            <CheckCircleIcon className="h-5 w-5" />
+            <span className="text-base font-medium">
+              {mediaType === 'tv'
+                ? seriesProgress?.completionCount
+                  ? intl.formatMessage(messages.watched, {
+                      count: seriesProgress.completionCount,
+                    })
+                  : intl.formatMessage(messages.watching)
+                : intl.formatMessage(messages.watched, {
+                    count: activity.watchCount,
+                  })}
             </span>
-            {activity.lastWatchedAt && (
-              <span className="ml-2 text-gray-400">
-                (
-                {intl.formatMessage(messages.lastWatched, {
-                  date: new Date(activity.lastWatchedAt).toLocaleDateString(
-                    intl.locale,
-                    {
-                      month: 'short',
-                      day: 'numeric',
-                    }
-                  ),
-                })}
-                )
+          </div>
+
+          {/* User rating */}
+          {activity.userReview?.rating && (
+            <div className="flex items-center gap-2">
+              <StarIcon className="h-5 w-5 text-yellow-400" />
+              <span className="text-base font-bold text-white">
+                {activity.userReview.rating}/10
               </span>
-            )}
-          </div>
-
-          {/* User rating and review */}
-          {activity.userReview && (
-            <>
-              {activity.userReview.rating && (
-                <div className="flex items-center text-sm text-gray-300">
-                  <StarIcon className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">
-                    {intl.formatMessage(messages.yourRating, {
-                      rating: activity.userReview.rating,
-                    })}
-                  </span>
-                </div>
-              )}
-
-              {activity.userReview.content && (
-                <div className="overflow-hidden rounded-md bg-gray-900 p-3">
-                  <div className="mb-1 flex items-center space-x-2 text-xs text-gray-400">
-                    <ChatBubbleLeftIcon className="h-3 w-3 flex-shrink-0" />
-                    <span>
-                      {activity.userReview.isPublic
-                        ? intl.formatMessage(messages.public)
-                        : intl.formatMessage(messages.private)}
-                    </span>
-                    {activity.userReview.containsSpoilers && (
-                      <span>
-                        • {intl.formatMessage(messages.containsSpoilers)}
-                      </span>
-                    )}
-                  </div>
-                  <p className="line-clamp-2 break-words text-sm text-gray-300">
-                    "{activity.userReview.content}"
-                  </p>
-                </div>
-              )}
-            </>
+            </div>
           )}
-
-          {/* Action buttons */}
-          <div className="pt-2">
-            <ReviewButton
-              tmdbId={tmdbId}
-              mediaType={mediaType}
-              onUpdate={handleReviewUpdate}
-            />
-          </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-400">
-            {intl.formatMessage(messages.notWatchedYet)}
-          </p>
-          <div className="flex space-x-2">
-            <ReviewButton
-              tmdbId={tmdbId}
-              mediaType={mediaType}
-              onUpdate={handleReviewUpdate}
-            />
-          </div>
-        </div>
+        <span className="mt-3 text-base text-gray-500">
+          {intl.formatMessage(messages.notWatched)}
+        </span>
       )}
     </div>
   );

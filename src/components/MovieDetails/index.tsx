@@ -1118,11 +1118,14 @@ const MovieDetails = ({ movie }: MovieDetailsProps) => {
               />
             </div>
           </div>
-          {data.mediaInfo?.id && (
-            <CommunitySection mediaId={data.mediaInfo.id} mediaType="movie" />
-          )}
-          <MediaActivitySection tmdbId={data.id} mediaType="movie" />
         </div>
+      </div>
+      {/* Activity Section - Compact Cards */}
+      <div className="mt-8 flex flex-wrap gap-3">
+        {data.mediaInfo?.id && (
+          <CommunitySection mediaId={data.mediaInfo.id} mediaType="movie" />
+        )}
+        <MediaActivitySection tmdbId={data.id} mediaType="movie" />
       </div>
       {data.credits.cast.length > 0 && (
         <>

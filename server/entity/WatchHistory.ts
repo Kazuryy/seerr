@@ -52,6 +52,9 @@ export class WatchHistory {
   @Index()
   public watchedAt: Date;
 
+  @Column({ type: 'boolean', default: false })
+  public isManual: boolean;
+
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;
 

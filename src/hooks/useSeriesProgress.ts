@@ -13,6 +13,7 @@ export interface SeriesProgress {
   status: SeriesProgressStatus;
   isOngoing: boolean;
   isCompleted: boolean;
+  completionCount: number;
   lastWatchedAt: string | null;
   completedAt: string | null;
 }

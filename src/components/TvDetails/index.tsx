@@ -29,6 +29,7 @@ import { SeriesProgressSection } from '@app/components/SeriesProgress';
 import Slider from '@app/components/Slider';
 import StatusBadge from '@app/components/StatusBadge';
 import { ReviewButton } from '@app/components/TrackingButtons';
+import MarkSeasonWatchedButton from '@app/components/TvDetails/MarkSeasonWatchedButton';
 import Season from '@app/components/TvDetails/Season';
 import useDeepLinks from '@app/hooks/useDeepLinks';
 import { MediaType as DeletionMediaType } from '@app/hooks/useDeletionRequests';
@@ -1076,6 +1077,11 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                                 </div>
                               </>
                             )}
+                          <MarkSeasonWatchedButton
+                            tmdbId={data.id}
+                            seasonNumber={season.seasonNumber}
+                            onUpdate={() => revalidate()}
+                          />
                           <ChevronDownIcon
                             className={`${
                               open ? 'rotate-180' : ''
@@ -1096,6 +1102,7 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                           <Disclosure.Panel className="w-full rounded-b-md border-b border-l border-r border-gray-700 px-4 pb-2">
                             <Season
                               tvId={data.id}
+                              tmdbId={data.id}
                               seasonNumber={season.seasonNumber}
                             />
                           </Disclosure.Panel>
@@ -1339,15 +1346,19 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
           </div>
         </div>
       </div>
-      {/* Activity Section - Full Width Grid */}
-      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Activity Section - Compact Cards */}
+      <div className="mt-8 flex flex-wrap gap-3">
         {data.mediaInfo?.id && (
           <>
             <SeriesProgressSection mediaId={data.mediaInfo.id} />
             <CommunitySection mediaId={data.mediaInfo.id} mediaType="tv" />
           </>
         )}
-        <MediaActivitySection tmdbId={data.id} mediaType="tv" />
+        <MediaActivitySection
+          tmdbId={data.id}
+          mediaType="tv"
+          mediaId={data.mediaInfo?.id}
+        />
       </div>
       {data.credits.cast.length > 0 && (
         <>

@@ -2520,6 +2520,375 @@ trackingRoutes.post(
 );
 
 // ============================================
+// Mark Season/Episode as Watched Endpoints
+// NOTE: These routes must be defined BEFORE /series/:mediaId/* routes
+// ============================================
+
+// Zod schema for mark season
+const markSeasonSchema = z.object({
+  seasonNumber: z.number().int().min(0), // 0 = specials
+  watchedAt: z.string().datetime().optional(),
+});
+
+// Zod schema for mark episode
+const markEpisodeSchema = z.object({
+  seasonNumber: z.number().int().min(0),
+  episodeNumber: z.number().int().min(1),
+  watchedAt: z.string().datetime().optional(),
+});
+
+// Zod schema for mark multiple episodes
+const markEpisodesSchema = z.object({
+  episodes: z.array(z.object({
+    seasonNumber: z.number().int().min(0),
+    episodeNumber: z.number().int().min(1),
+  })).min(1),
+  watchedAt: z.string().datetime().optional(),
+});
+
+/**
+ * GET /api/v1/tracking/series/:tmdbId/season/:seasonNumber/status
+ * Get watch status for a specific season
+ */
+trackingRoutes.get(
+  '/series/:tmdbId/season/:seasonNumber/status',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      const seasonNumber = parseInt(req.params.seasonNumber);
+      const user = req.user as User;
+
+      if (isNaN(tmdbId) || isNaN(seasonNumber)) {
+        return next({
+          status: 400,
+          message: 'Invalid TMDB ID or season number.',
+        });
+      }
+
+      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+
+      const status = await watchHistoryService.getSeasonWatchStatus(
+        user.id,
+        tmdbId,
+        seasonNumber
+      );
+
+      if (!status) {
+        return res.status(200).json({
+          watchedEpisodes: 0,
+          manualEpisodes: 0,
+          totalEpisodes: 0,
+          watchedEpisodeNumbers: [],
+          manualEpisodeNumbers: [],
+          isComplete: false,
+          hasManualEntries: false,
+        });
+      }
+
+      return res.status(200).json({
+        ...status,
+        isComplete: status.watchedEpisodes >= status.totalEpisodes && status.totalEpisodes > 0,
+        hasManualEntries: status.manualEpisodes > 0,
+      });
+    } catch (error) {
+      logger.error('Failed to get season watch status', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to get season watch status.',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/tracking/series/:tmdbId/mark-season
+ * Mark an entire season as watched
+ */
+trackingRoutes.post(
+  '/series/:tmdbId/mark-season',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      const user = req.user as User;
+
+      if (isNaN(tmdbId)) {
+        return next({
+          status: 400,
+          message: 'Invalid TMDB ID.',
+        });
+      }
+
+      const { seasonNumber, watchedAt } = markSeasonSchema.parse(req.body);
+
+      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+
+      const result = await watchHistoryService.markSeasonAsWatched(
+        user.id,
+        tmdbId,
+        seasonNumber,
+        watchedAt ? new Date(watchedAt) : undefined
+      );
+
+      logger.info(
+        `User ${user.id} marked season ${seasonNumber} of series ${tmdbId} as watched`,
+        {
+          label: 'Tracking Routes',
+          ...result,
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Season ${seasonNumber} marked as watched`,
+        ...result,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next({
+          status: 400,
+          message: 'Invalid request body.',
+          errors: error.errors,
+        });
+      }
+
+      logger.error('Failed to mark season as watched', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to mark season as watched.',
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/v1/tracking/series/:tmdbId/mark-season/:seasonNumber
+ * Unmark a season (remove manual entries only)
+ */
+trackingRoutes.delete(
+  '/series/:tmdbId/mark-season/:seasonNumber',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      const seasonNumber = parseInt(req.params.seasonNumber);
+      const user = req.user as User;
+
+      if (isNaN(tmdbId) || isNaN(seasonNumber)) {
+        return next({
+          status: 400,
+          message: 'Invalid TMDB ID or season number.',
+        });
+      }
+
+      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+
+      const deletedCount = await watchHistoryService.unmarkSeasonAsWatched(
+        user.id,
+        tmdbId,
+        seasonNumber
+      );
+
+      logger.info(
+        `User ${user.id} unmarked season ${seasonNumber} of series ${tmdbId}: ${deletedCount} entries removed`,
+        { label: 'Tracking Routes' }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Season ${seasonNumber} unmarked`,
+        deletedCount,
+      });
+    } catch (error) {
+      logger.error('Failed to unmark season', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to unmark season.',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/tracking/series/:tmdbId/mark-episode
+ * Mark a single episode as watched
+ */
+trackingRoutes.post(
+  '/series/:tmdbId/mark-episode',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      const user = req.user as User;
+
+      if (isNaN(tmdbId)) {
+        return next({
+          status: 400,
+          message: 'Invalid TMDB ID.',
+        });
+      }
+
+      const { seasonNumber, episodeNumber, watchedAt } = markEpisodeSchema.parse(req.body);
+
+      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+
+      const result = await watchHistoryService.markEpisodeAsWatched(
+        user.id,
+        tmdbId,
+        seasonNumber,
+        episodeNumber,
+        watchedAt ? new Date(watchedAt) : undefined
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Episode S${seasonNumber}E${episodeNumber} marked as watched`,
+        ...result,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next({
+          status: 400,
+          message: 'Invalid request body.',
+          errors: error.errors,
+        });
+      }
+
+      logger.error('Failed to mark episode as watched', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to mark episode as watched.',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/tracking/series/:tmdbId/mark-episodes
+ * Mark multiple episodes as watched
+ */
+trackingRoutes.post(
+  '/series/:tmdbId/mark-episodes',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      const user = req.user as User;
+
+      if (isNaN(tmdbId)) {
+        return next({
+          status: 400,
+          message: 'Invalid TMDB ID.',
+        });
+      }
+
+      const { episodes, watchedAt } = markEpisodesSchema.parse(req.body);
+
+      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+
+      const result = await watchHistoryService.markEpisodesAsWatched(
+        user.id,
+        tmdbId,
+        episodes,
+        watchedAt ? new Date(watchedAt) : undefined
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `${result.markedEpisodes} episodes marked as watched`,
+        ...result,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next({
+          status: 400,
+          message: 'Invalid request body.',
+          errors: error.errors,
+        });
+      }
+
+      logger.error('Failed to mark episodes as watched', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to mark episodes as watched.',
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/v1/tracking/series/:tmdbId/mark-episode/:seasonNumber/:episodeNumber
+ * Unmark a single episode (remove manual entry only)
+ */
+trackingRoutes.delete(
+  '/series/:tmdbId/mark-episode/:seasonNumber/:episodeNumber',
+  isAuthenticated(),
+  async (req, res, next) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      const seasonNumber = parseInt(req.params.seasonNumber);
+      const episodeNumber = parseInt(req.params.episodeNumber);
+      const user = req.user as User;
+
+      if (isNaN(tmdbId) || isNaN(seasonNumber) || isNaN(episodeNumber)) {
+        return next({
+          status: 400,
+          message: 'Invalid TMDB ID, season number, or episode number.',
+        });
+      }
+
+      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+
+      const deleted = await watchHistoryService.unmarkEpisodeAsWatched(
+        user.id,
+        tmdbId,
+        seasonNumber,
+        episodeNumber
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: deleted
+          ? `Episode S${seasonNumber}E${episodeNumber} unmarked`
+          : 'No manual entry found for this episode',
+        deleted,
+      });
+    } catch (error) {
+      logger.error('Failed to unmark episode', {
+        label: 'Tracking Routes',
+        error: (error as Error).message,
+      });
+
+      return next({
+        status: 500,
+        message: 'Unable to unmark episode.',
+      });
+    }
+  }
+);
+
+// ============================================
 // Series Progress Endpoints
 // ============================================
 
