@@ -1006,6 +1006,8 @@ trackingRoutes.get(
               avatar: review.user.avatar,
             },
             media: review.media,
+            mediaType: review.mediaType,
+            seasonNumber: review.seasonNumber,
             rating: review.rating,
             content: review.content,
             containsSpoilers: review.containsSpoilers,
@@ -2557,10 +2559,14 @@ const markEpisodeSchema = z.object({
 
 // Zod schema for mark multiple episodes
 const markEpisodesSchema = z.object({
-  episodes: z.array(z.object({
-    seasonNumber: z.number().int().min(0),
-    episodeNumber: z.number().int().min(1),
-  })).min(1),
+  episodes: z
+    .array(
+      z.object({
+        seasonNumber: z.number().int().min(0),
+        episodeNumber: z.number().int().min(1),
+      })
+    )
+    .min(1),
   watchedAt: z.string().datetime().optional(),
 });
 
@@ -2584,7 +2590,9 @@ trackingRoutes.get(
         });
       }
 
-      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+      const watchHistoryService = (
+        await import('@server/lib/watchHistoryService')
+      ).default;
 
       const status = await watchHistoryService.getSeasonWatchStatus(
         user.id,
@@ -2606,7 +2614,9 @@ trackingRoutes.get(
 
       return res.status(200).json({
         ...status,
-        isComplete: status.watchedEpisodes >= status.totalEpisodes && status.totalEpisodes > 0,
+        isComplete:
+          status.watchedEpisodes >= status.totalEpisodes &&
+          status.totalEpisodes > 0,
         hasManualEntries: status.manualEpisodes > 0,
       });
     } catch (error) {
@@ -2644,7 +2654,9 @@ trackingRoutes.post(
 
       const { seasonNumber, watchedAt } = markSeasonSchema.parse(req.body);
 
-      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+      const watchHistoryService = (
+        await import('@server/lib/watchHistoryService')
+      ).default;
 
       const result = await watchHistoryService.markSeasonAsWatched(
         user.id,
@@ -2708,7 +2720,9 @@ trackingRoutes.delete(
         });
       }
 
-      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+      const watchHistoryService = (
+        await import('@server/lib/watchHistoryService')
+      ).default;
 
       const deletedCount = await watchHistoryService.unmarkSeasonAsWatched(
         user.id,
@@ -2759,9 +2773,12 @@ trackingRoutes.post(
         });
       }
 
-      const { seasonNumber, episodeNumber, watchedAt } = markEpisodeSchema.parse(req.body);
+      const { seasonNumber, episodeNumber, watchedAt } =
+        markEpisodeSchema.parse(req.body);
 
-      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+      const watchHistoryService = (
+        await import('@server/lib/watchHistoryService')
+      ).default;
 
       const result = await watchHistoryService.markEpisodeAsWatched(
         user.id,
@@ -2819,7 +2836,9 @@ trackingRoutes.post(
 
       const { episodes, watchedAt } = markEpisodesSchema.parse(req.body);
 
-      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+      const watchHistoryService = (
+        await import('@server/lib/watchHistoryService')
+      ).default;
 
       const result = await watchHistoryService.markEpisodesAsWatched(
         user.id,
@@ -2876,7 +2895,9 @@ trackingRoutes.delete(
         });
       }
 
-      const watchHistoryService = (await import('@server/lib/watchHistoryService')).default;
+      const watchHistoryService = (
+        await import('@server/lib/watchHistoryService')
+      ).default;
 
       const deleted = await watchHistoryService.unmarkEpisodeAsWatched(
         user.id,

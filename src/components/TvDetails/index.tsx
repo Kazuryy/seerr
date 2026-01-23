@@ -1082,6 +1082,21 @@ const TvDetails = ({ tv }: TvDetailsProps) => {
                             seasonNumber={season.seasonNumber}
                             onUpdate={() => revalidate()}
                           />
+                          <ReviewButton
+                            mediaId={data.mediaInfo?.id ?? 0}
+                            tmdbId={data.id}
+                            mediaType="tv"
+                            seasonNumber={season.seasonNumber}
+                            title={`${data.name} - ${
+                              season.seasonNumber === 0
+                                ? intl.formatMessage(globalMessages.specials)
+                                : intl.formatMessage(messages.seasonnumber, {
+                                    seasonNumber: season.seasonNumber,
+                                  })
+                            }`}
+                            onUpdate={() => revalidate()}
+                            compact
+                          />
                           <ChevronDownIcon
                             className={`${
                               open ? 'rotate-180' : ''

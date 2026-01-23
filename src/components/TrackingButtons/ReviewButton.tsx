@@ -65,12 +65,16 @@ const ReviewButton = ({
         )}
       >
         <Button
-          onClick={() => setShowModal(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowModal(true);
+          }}
           className={compact ? '' : 'mr-2'}
           buttonType={hasReview ? 'success' : 'ghost'}
           buttonSize={compact ? 'sm' : 'default'}
         >
-          <PencilSquareIcon className={compact ? 'h-4 w-4' : ''} />
+          <PencilSquareIcon className={compact ? 'h-5 w-5' : ''} />
           {hasReview && myReview.rating && !compact && (
             <span className="ml-1 text-sm font-bold">{myReview.rating}/10</span>
           )}

@@ -22,6 +22,7 @@ const messages = defineMessages('components.Community.ReviewCard', {
   viewComments: 'View Comments',
   hideComments: 'Hide Comments',
   ratedOutOf10: 'Rated {rating}/10',
+  seasonNumber: 'Season {seasonNumber}',
 });
 
 interface ReviewCardProps {
@@ -63,7 +64,9 @@ const ReviewCard = ({ review, compact = false, onExpand }: ReviewCardProps) => {
 
     return (
       <div
-        className={`flex items-start space-x-3 rounded-md bg-gray-700/50 p-3 transition-colors hover:bg-gray-700 ${onExpand ? 'cursor-pointer' : ''}`}
+        className={`flex items-start space-x-3 rounded-md bg-gray-700/50 p-3 transition-colors hover:bg-gray-700 ${
+          onExpand ? 'cursor-pointer' : ''
+        }`}
         onClick={handleClick}
         role={onExpand ? 'button' : undefined}
         tabIndex={onExpand ? 0 : undefined}
@@ -101,14 +104,27 @@ const ReviewCard = ({ review, compact = false, onExpand }: ReviewCardProps) => {
           </div>
           {review.media && (
             <Link
-              href={`/${review.media.mediaType === 'movie' ? 'movie' : 'tv'}/${review.media.tmdbId}`}
+              href={`/${review.media.mediaType === 'movie' ? 'movie' : 'tv'}/${
+                review.media.tmdbId
+              }`}
               className="text-xs text-indigo-400 hover:text-indigo-300"
             >
-              {review.media.title || `${review.media.mediaType} #${review.media.tmdbId}`}
+              {review.media.title ||
+                `${review.media.mediaType} #${review.media.tmdbId}`}
+              {review.seasonNumber !== undefined &&
+                review.seasonNumber !== null && (
+                  <span className="text-gray-400">
+                    {' '}
+                    -{' '}
+                    {intl.formatMessage(messages.seasonNumber, {
+                      seasonNumber: review.seasonNumber,
+                    })}
+                  </span>
+                )}
             </Link>
           )}
           {review.content && (
-            <p className="mt-1 line-clamp-2 text-xs text-gray-400">
+            <p className="line-clamp-2 mt-1 text-xs text-gray-400">
               {review.containsSpoilers ? '[Spoiler]' : review.content}
             </p>
           )}
@@ -173,8 +189,18 @@ const ReviewCard = ({ review, compact = false, onExpand }: ReviewCardProps) => {
           <TmdbTitleCard
             id={review.media.tmdbId}
             tmdbId={review.media.tmdbId}
-            type={(review.media.mediaType || review.mediaType) as 'movie' | 'tv'}
+            type={
+              (review.media.mediaType || review.mediaType) as 'movie' | 'tv'
+            }
           />
+          {review.seasonNumber !== undefined &&
+            review.seasonNumber !== null && (
+              <p className="mt-2 text-sm text-gray-400">
+                {intl.formatMessage(messages.seasonNumber, {
+                  seasonNumber: review.seasonNumber,
+                })}
+              </p>
+            )}
         </div>
       )}
 
@@ -237,7 +263,9 @@ const ReviewCard = ({ review, compact = false, onExpand }: ReviewCardProps) => {
           className="flex items-center space-x-1.5 rounded-md bg-gray-700 px-2.5 py-1.5 text-gray-300 hover:bg-gray-600 sm:space-x-2 sm:px-3 sm:py-2"
         >
           <ChatBubbleLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="text-xs font-medium sm:text-sm">{review.commentsCount}</span>
+          <span className="text-xs font-medium sm:text-sm">
+            {review.commentsCount}
+          </span>
         </button>
       </div>
 
