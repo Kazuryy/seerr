@@ -31,8 +31,8 @@ communityRoutes.get(
           startDate.setDate(now.getDate() - 7);
           break;
         case 'month':
-          startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 1);
+          // First day of current month
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
           break;
         case 'year':
           startDate = new Date(now);

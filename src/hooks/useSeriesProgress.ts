@@ -1,4 +1,6 @@
 import type { SeriesProgressStatus } from '@server/entity/SeriesProgress';
+import axios from 'axios';
+import { useCallback } from 'react';
 import useSWR from 'swr';
 
 export interface SeriesProgress {
@@ -46,11 +48,31 @@ export const useSeriesProgress = (mediaId?: number) => {
     mediaId ? `/api/v1/tracking/series/${mediaId}/progress` : null
   );
 
+  const abandonSeries = useCallback(async () => {
+    if (!mediaId) return null;
+    const response = await axios.post<SeriesProgress>(
+      `/api/v1/tracking/series/${mediaId}/abandon`
+    );
+    mutate(response.data);
+    return response.data;
+  }, [mediaId, mutate]);
+
+  const resumeSeries = useCallback(async () => {
+    if (!mediaId) return null;
+    const response = await axios.post<SeriesProgress>(
+      `/api/v1/tracking/series/${mediaId}/resume`
+    );
+    mutate(response.data);
+    return response.data;
+  }, [mediaId, mutate]);
+
   return {
     data,
     error,
     isLoading: !data && !error,
     mutate,
+    abandonSeries,
+    resumeSeries,
   };
 };
 
@@ -99,6 +121,30 @@ export const useSeriesCompletionStats = (userId?: number) => {
     isLoading: !data && !error,
     mutate,
   };
+};
+
+/**
+ * Abandon a series by mediaId
+ */
+export const abandonSeriesById = async (
+  mediaId: number
+): Promise<SeriesProgress> => {
+  const response = await axios.post<SeriesProgress>(
+    `/api/v1/tracking/series/${mediaId}/abandon`
+  );
+  return response.data;
+};
+
+/**
+ * Resume a series by mediaId
+ */
+export const resumeSeriesById = async (
+  mediaId: number
+): Promise<SeriesProgress> => {
+  const response = await axios.post<SeriesProgress>(
+    `/api/v1/tracking/series/${mediaId}/resume`
+  );
+  return response.data;
 };
 
 export default useSeriesProgress;

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useIntl } from 'react-intl';
 
 const messages = defineMessages('components.Dashboard.LeaderboardWidget', {
-  leaderboard: 'Top Watchers',
+  leaderboard: 'Top Watchers (Month)',
   viewAll: 'View All',
   noData: 'No data yet',
   watchCount: '{count, plural, one {# watch} other {# watches}}',
@@ -38,7 +38,7 @@ const LeaderboardWidget = () => {
           </h3>
         </div>
         <Link
-          href="/community?tab=leaderboard"
+          href="/community?tab=leaderboard&metric=watches"
           className="text-sm text-indigo-400 hover:text-indigo-300"
         >
           {intl.formatMessage(messages.viewAll)} →

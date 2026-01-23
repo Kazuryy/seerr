@@ -1,11 +1,12 @@
-import Alert from '@app/components/Common/Alert';
 import UserBadgeDisplay from '@app/components/Badges/UserBadgeDisplay';
+import Alert from '@app/components/Common/Alert';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
 import { useLeaderboard } from '@app/hooks/useCommunity';
 import defineMessages from '@app/utils/defineMessages';
 import { TrophyIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 
 const messages = defineMessages('components.Community.Leaderboard', {
@@ -24,12 +25,21 @@ const messages = defineMessages('components.Community.Leaderboard', {
 
 const Leaderboard = () => {
   const intl = useIntl();
+  const router = useRouter();
   const [period, setPeriod] = useState<'week' | 'month' | 'year' | 'alltime'>(
     'month'
   );
   const [metric, setMetric] = useState<'reviews' | 'likes' | 'watches'>(
     'reviews'
   );
+
+  // Read metric from URL query parameter
+  useEffect(() => {
+    const urlMetric = router.query.metric as string;
+    if (urlMetric && ['reviews', 'likes', 'watches'].includes(urlMetric)) {
+      setMetric(urlMetric as 'reviews' | 'likes' | 'watches');
+    }
+  }, [router.query.metric]);
 
   const { data, isLoading, error } = useLeaderboard({
     period,
@@ -141,7 +151,7 @@ const Leaderboard = () => {
 
       {/* Leaderboard Table */}
       {data && data.leaderboard.length > 0 ? (
-        <div className="overflow-x-auto overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
+        <div className="overflow-hidden overflow-x-auto rounded-lg border border-gray-700 bg-gray-800">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-750 border-b border-gray-700">
@@ -166,7 +176,9 @@ const Leaderboard = () => {
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       {entry.rank <= 3 && (
                         <TrophyIcon
-                          className={`h-4 w-4 sm:h-5 sm:w-5 ${getRankColor(entry.rank)}`}
+                          className={`h-4 w-4 sm:h-5 sm:w-5 ${getRankColor(
+                            entry.rank
+                          )}`}
                         />
                       )}
                       <span
@@ -193,7 +205,11 @@ const Leaderboard = () => {
                           <span className="text-sm font-medium text-white sm:text-base">
                             {entry.user.displayName}
                           </span>
-                          <UserBadgeDisplay userId={entry.user.id} limit={2} size="sm" />
+                          <UserBadgeDisplay
+                            userId={entry.user.id}
+                            limit={2}
+                            size="sm"
+                          />
                         </div>
                       </div>
                     </Link>

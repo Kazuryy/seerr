@@ -463,11 +463,13 @@ class SeriesProgressService {
     // Get all unique TV series the user has watched
     const series = await watchHistoryRepository
       .createQueryBuilder('watch')
-      .select('DISTINCT watch.mediaId', 'mediaId')
+      .select('watch.mediaId', 'mediaId')
       .addSelect('media.tmdbId', 'tmdbId')
       .innerJoin('watch.media', 'media')
       .where('watch.userId = :userId', { userId })
       .andWhere('watch.mediaType = :mediaType', { mediaType: MediaType.TV })
+      .groupBy('watch.mediaId')
+      .addGroupBy('media.tmdbId')
       .getRawMany();
 
     logger.info(

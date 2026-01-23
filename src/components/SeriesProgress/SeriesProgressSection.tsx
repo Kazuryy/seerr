@@ -1,9 +1,18 @@
+import Spinner from '@app/assets/spinner.svg';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
+import Tooltip from '@app/components/Common/Tooltip';
 import { useSeriesProgress } from '@app/hooks/useSeriesProgress';
 import defineMessages from '@app/utils/defineMessages';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
-import { CheckCircleIcon, PlayIcon } from '@heroicons/react/24/solid';
+import {
+  CheckCircleIcon,
+  PlayIcon,
+  StopIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/solid';
+import { useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useToasts } from 'react-toast-notifications';
 
 const messages = defineMessages(
   'components.SeriesProgress.SeriesProgressSection',
@@ -11,16 +20,32 @@ const messages = defineMessages(
     seriesProgress: 'Progress',
     episodes: '{watched}/{total} ep',
     ongoing: 'Ongoing',
+    abandonSeries: 'Drop Series',
+    resumeSeries: 'Resume Series',
+    abandonSuccess: 'Series dropped successfully',
+    resumeSuccess: 'Series resumed successfully',
+    error: 'An error occurred',
   }
 );
 
 interface SeriesProgressSectionProps {
   mediaId: number;
+  onUpdate?: () => void;
 }
 
-const SeriesProgressSection = ({ mediaId }: SeriesProgressSectionProps) => {
+const SeriesProgressSection = ({
+  mediaId,
+  onUpdate,
+}: SeriesProgressSectionProps) => {
   const intl = useIntl();
-  const { data: progress, isLoading } = useSeriesProgress(mediaId);
+  const { addToast } = useToasts();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const {
+    data: progress,
+    isLoading,
+    abandonSeries,
+    resumeSeries,
+  } = useSeriesProgress(mediaId);
 
   if (isLoading) {
     return (
@@ -36,9 +61,48 @@ const SeriesProgressSection = ({ mediaId }: SeriesProgressSectionProps) => {
   }
 
   const isCompleted = progress.status === 'completed';
+  const isAbandoned = progress.status === 'abandoned';
   const statusColor = isCompleted
     ? 'from-green-500 to-green-400'
+    : isAbandoned
+    ? 'from-red-500 to-red-400'
     : 'from-indigo-500 to-indigo-400';
+
+  const handleAbandon = async () => {
+    setIsUpdating(true);
+    try {
+      await abandonSeries();
+      addToast(intl.formatMessage(messages.abandonSuccess), {
+        appearance: 'success',
+        autoDismiss: true,
+      });
+      onUpdate?.();
+    } catch {
+      addToast(intl.formatMessage(messages.error), {
+        appearance: 'error',
+        autoDismiss: true,
+      });
+    }
+    setIsUpdating(false);
+  };
+
+  const handleResume = async () => {
+    setIsUpdating(true);
+    try {
+      await resumeSeries();
+      addToast(intl.formatMessage(messages.resumeSuccess), {
+        appearance: 'success',
+        autoDismiss: true,
+      });
+      onUpdate?.();
+    } catch {
+      addToast(intl.formatMessage(messages.error), {
+        appearance: 'error',
+        autoDismiss: true,
+      });
+    }
+    setIsUpdating(false);
+  };
 
   return (
     <div className="flex w-48 flex-col rounded-lg border border-gray-700 bg-gray-800 p-4">
@@ -52,6 +116,8 @@ const SeriesProgressSection = ({ mediaId }: SeriesProgressSectionProps) => {
         </div>
         {isCompleted ? (
           <CheckCircleIcon className="h-5 w-5 text-green-500" />
+        ) : isAbandoned ? (
+          <XCircleIcon className="h-5 w-5 text-red-500" />
         ) : (
           <PlayIcon className="h-5 w-5 text-indigo-400" />
         )}
@@ -84,6 +150,39 @@ const SeriesProgressSection = ({ mediaId }: SeriesProgressSectionProps) => {
           {progress.completionPercentage.toFixed(0)}%
         </span>
       </div>
+
+      {/* Abandon/Resume button */}
+      {!isCompleted && (
+        <Tooltip
+          content={intl.formatMessage(
+            isAbandoned ? messages.resumeSeries : messages.abandonSeries
+          )}
+        >
+          <button
+            onClick={isAbandoned ? handleResume : handleAbandon}
+            disabled={isUpdating}
+            className={`mt-3 flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition ${
+              isAbandoned
+                ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                : 'bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white'
+            } disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            {isUpdating ? (
+              <Spinner className="h-4 w-4" />
+            ) : isAbandoned ? (
+              <>
+                <PlayIcon className="h-4 w-4" />
+                {intl.formatMessage(messages.resumeSeries)}
+              </>
+            ) : (
+              <>
+                <StopIcon className="h-4 w-4" />
+                {intl.formatMessage(messages.abandonSeries)}
+              </>
+            )}
+          </button>
+        </Tooltip>
+      )}
     </div>
   );
 };

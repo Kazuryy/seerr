@@ -1,12 +1,20 @@
+import Spinner from '@app/assets/spinner.svg';
 import CachedImage from '@app/components/Common/CachedImage';
 import LoadingSpinner from '@app/components/Common/LoadingSpinner';
+import Tooltip from '@app/components/Common/Tooltip';
 import SeriesProgressBar from '@app/components/SeriesProgress/SeriesProgressBar';
-import { useSeriesProgressList } from '@app/hooks/useSeriesProgress';
+import {
+  abandonSeriesById,
+  resumeSeriesById,
+  useSeriesProgressList,
+} from '@app/hooks/useSeriesProgress';
 import defineMessages from '@app/utils/defineMessages';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { PlayIcon, StopIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useToasts } from 'react-toast-notifications';
 
 const messages = defineMessages(
   'components.SeriesProgress.SeriesProgressList',
@@ -21,6 +29,11 @@ const messages = defineMessages(
     sortByLastWatched: 'Last Watched',
     sortByPercentage: 'Completion %',
     episodes: '{count} episodes',
+    abandonSeries: 'Drop Series',
+    resumeSeries: 'Resume Series',
+    abandonSuccess: 'Series dropped successfully',
+    resumeSuccess: 'Series resumed successfully',
+    error: 'An error occurred',
   }
 );
 
@@ -37,14 +50,52 @@ const SeriesProgressList = ({
   showFilters = true,
 }: SeriesProgressListProps) => {
   const intl = useIntl();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const { addToast } = useToasts();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('in_progress');
   const [sortBy, setSortBy] = useState<SortOption>('lastWatched');
+  const [updatingMediaId, setUpdatingMediaId] = useState<number | null>(null);
 
-  const { data, isLoading, error } = useSeriesProgressList({
+  const { data, isLoading, error, mutate } = useSeriesProgressList({
     status: statusFilter,
     sortBy,
     take,
   });
+
+  const handleAbandon = async (mediaId: number) => {
+    setUpdatingMediaId(mediaId);
+    try {
+      await abandonSeriesById(mediaId);
+      addToast(intl.formatMessage(messages.abandonSuccess), {
+        appearance: 'success',
+        autoDismiss: true,
+      });
+      mutate();
+    } catch {
+      addToast(intl.formatMessage(messages.error), {
+        appearance: 'error',
+        autoDismiss: true,
+      });
+    }
+    setUpdatingMediaId(null);
+  };
+
+  const handleResume = async (mediaId: number) => {
+    setUpdatingMediaId(mediaId);
+    try {
+      await resumeSeriesById(mediaId);
+      addToast(intl.formatMessage(messages.resumeSuccess), {
+        appearance: 'success',
+        autoDismiss: true,
+      });
+      mutate();
+    } catch {
+      addToast(intl.formatMessage(messages.error), {
+        appearance: 'error',
+        autoDismiss: true,
+      });
+    }
+    setUpdatingMediaId(null);
+  };
 
   if (isLoading) {
     return (
@@ -150,7 +201,11 @@ const SeriesProgressList = ({
                     type="tmdb"
                     src={`https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${progress.backdropPath}`}
                     alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
                     fill
                   />
                   <div
@@ -178,7 +233,11 @@ const SeriesProgressList = ({
                       }
                       alt=""
                       sizes="100vw"
-                      style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        objectFit: 'cover',
+                      }}
                       width={600}
                       height={900}
                     />
@@ -227,6 +286,44 @@ const SeriesProgressList = ({
                     )}
                   </div>
                 </div>
+
+                {/* Abandon/Resume Button */}
+                {progress.status !== 'completed' && (
+                  <div className="z-10 flex items-center pr-4">
+                    <Tooltip
+                      content={intl.formatMessage(
+                        progress.status === 'abandoned'
+                          ? messages.resumeSeries
+                          : messages.abandonSeries
+                      )}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (progress.status === 'abandoned') {
+                            handleResume(progress.mediaId);
+                          } else {
+                            handleAbandon(progress.mediaId);
+                          }
+                        }}
+                        disabled={updatingMediaId === progress.mediaId}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                          progress.status === 'abandoned'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                            : 'bg-gray-700 text-gray-400 hover:bg-red-600 hover:text-white'
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                      >
+                        {updatingMediaId === progress.mediaId ? (
+                          <Spinner className="h-4 w-4" />
+                        ) : progress.status === 'abandoned' ? (
+                          <PlayIcon className="h-4 w-4" />
+                        ) : (
+                          <StopIcon className="h-4 w-4" />
+                        )}
+                      </button>
+                    </Tooltip>
+                  </div>
+                )}
               </div>
             </div>
           ))}
