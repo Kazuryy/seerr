@@ -84,6 +84,9 @@ const messages = defineMessages('components.NotificationTypeSelector', {
     'Send notifications when media is permanently deleted.',
   usermediadeletioncompletedDescription:
     'Get notified when media is permanently deleted.',
+  badgeearned: 'Badge Earned',
+  badgeearnedDescription: 'Send notifications when users earn badges.',
+  userbadgeearnedDescription: 'Get notified when you earn a badge.',
 });
 
 export const hasNotificationType = (
@@ -130,6 +133,7 @@ export enum Notification {
   MEDIA_DELETION_APPROVED = 16384,
   MEDIA_DELETION_REJECTED = 32768,
   MEDIA_DELETION_COMPLETED = 65536,
+  BADGE_EARNED = 131072,
 }
 
 export const ALL_NOTIFICATIONS = Object.values(Notification)
@@ -426,6 +430,17 @@ const NotificationTypeSelector = ({
         value: Notification.MEDIA_DELETION_COMPLETED,
         hidden: user && !hasPermission(Permission.MANAGE_REQUESTS),
         hasNotifyUser: false,
+      },
+      {
+        id: 'badge-earned',
+        name: intl.formatMessage(messages.badgeearned),
+        description: intl.formatMessage(
+          user
+            ? messages.userbadgeearnedDescription
+            : messages.badgeearnedDescription
+        ),
+        value: Notification.BADGE_EARNED,
+        hasNotifyUser: true,
       },
     ];
 

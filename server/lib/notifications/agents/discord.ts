@@ -195,6 +195,20 @@ class DiscordAgent
           color = EmbedColors.GREEN;
           break;
       }
+    } else if (payload.badge) {
+      color = EmbedColors.GOLD;
+      fields.push(
+        {
+          name: 'Badge',
+          value: `${payload.badge.icon} ${payload.badge.displayName}`,
+          inline: true,
+        },
+        {
+          name: 'Earned By',
+          value: payload.notifyUser?.displayName ?? 'Unknown',
+          inline: true,
+        }
+      );
     }
 
     for (const extra of payload.extra ?? []) {

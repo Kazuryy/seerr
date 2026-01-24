@@ -364,9 +364,9 @@ class BadgeService {
         const badgeDefinition = BADGE_DEFINITIONS[badgeType];
         notificationManager.sendNotification(Notification.BADGE_EARNED, {
           notifyUser: user,
-          notifySystem: false,
+          notifySystem: true,
           notifyAdmin: false,
-          subject: `You earned a badge: ${badgeDefinition.displayName}!`,
+          subject: `${badgeDefinition.icon} ${user.displayName} earned a badge: ${badgeDefinition.displayName}!`,
           message: badgeDefinition.description,
           badge: {
             type: badgeType,

@@ -123,6 +123,17 @@ class SlackAgent
           }`,
         }
       );
+    } else if (payload.badge) {
+      fields.push(
+        {
+          type: 'mrkdwn',
+          text: `*Badge*\n${payload.badge.icon} ${payload.badge.displayName}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Earned By*\n${payload.notifyUser?.displayName ?? 'Unknown'}`,
+        }
+      );
     }
 
     for (const extra of payload.extra ?? []) {

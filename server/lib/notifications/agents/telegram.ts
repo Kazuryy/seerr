@@ -123,6 +123,13 @@ class TelegramAgent
       message += `\n\*Issue Status:\* ${
         payload.issue.status === IssueStatus.OPEN ? 'Open' : 'Resolved'
       }`;
+    } else if (payload.badge) {
+      message += `\n\n\*Badge:\* ${payload.badge.icon} ${this.escapeText(
+        payload.badge.displayName
+      )}`;
+      message += `\n\*Earned By:\* ${this.escapeText(
+        payload.notifyUser?.displayName ?? 'Unknown'
+      )}`;
     }
 
     for (const extra of payload.extra ?? []) {

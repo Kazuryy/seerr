@@ -118,6 +118,23 @@ class WebPushAgent
       case Notification.ISSUE_REOPENED:
         message = `The ${issueType} was reopened by ${payload.issue?.modifiedBy?.displayName}.`;
         break;
+      case Notification.MEDIA_DELETION_VOTING:
+        message = `Deletion voting has started for ${payload.subject}. Cast your vote!`;
+        break;
+      case Notification.MEDIA_DELETION_APPROVED:
+        message = `Deletion request for ${payload.subject} has been approved by community vote.`;
+        break;
+      case Notification.MEDIA_DELETION_REJECTED:
+        message = `Deletion request for ${payload.subject} has been rejected by community vote.`;
+        break;
+      case Notification.MEDIA_DELETION_COMPLETED:
+        message = `${payload.subject} has been permanently deleted.`;
+        break;
+      case Notification.BADGE_EARNED:
+        message = payload.badge
+          ? `${payload.badge.icon} You earned the "${payload.badge.displayName}" badge! ${payload.badge.description}`
+          : payload.message;
+        break;
       default:
         return {
           notificationType: Notification[type],
