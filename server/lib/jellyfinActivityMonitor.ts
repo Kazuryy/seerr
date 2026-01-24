@@ -330,16 +330,18 @@ class JellyfinActivityMonitor {
     }
 
     if (existingSession) {
-      // Update existing session
-      existingSession.lastSeenAt = new Date();
-      existingSession.positionTicks = session.PlayState.PositionTicks;
-      existingSession.isPaused = session.PlayState.IsPaused;
-
       // Check if the item changed (user switched to different content)
+      // IMPORTANT: Do this BEFORE updating position to preserve the old position for accurate tracking
       if (existingSession.jellyfinItemId !== nowPlayingItem.Id) {
-        // End the old session and start a new one
+        // End the old session with its preserved position (from previous poll)
         await this.processSessionEnd(existingSession);
+        // Start a new session for the new content
         await this.startNewSession(session, seerrUser, tmdbId, mediaType);
+      } else {
+        // Same item - update session state
+        existingSession.lastSeenAt = new Date();
+        existingSession.positionTicks = session.PlayState.PositionTicks;
+        existingSession.isPaused = session.PlayState.IsPaused;
       }
     } else {
       // New session
