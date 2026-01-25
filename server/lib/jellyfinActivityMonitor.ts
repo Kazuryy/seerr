@@ -537,9 +537,18 @@ class JellyfinActivityMonitor {
       );
     }
 
-    // Create watch history entry if meets completion criteria
-    if (isCompletedWatch) {
-      await this.createWatchHistoryEntry(session, minutesWatched);
+    // Minimum 10 minutes (600 seconds) for partial watches to be saved in WatchHistory
+    // This prevents flooding the database with very short sessions
+    const minPartialWatchSeconds = 600;
+    const shouldCreateWatchHistory =
+      isCompletedWatch || watchDurationSeconds >= minPartialWatchSeconds;
+
+    if (shouldCreateWatchHistory) {
+      await this.createWatchHistoryEntry(
+        session,
+        minutesWatched,
+        !isCompletedWatch
+      );
     }
   }
 
@@ -606,13 +615,15 @@ class JellyfinActivityMonitor {
   }
 
   /**
-   * Create a watch history entry for a completed session
+   * Create a watch history entry for a session
    * @param session The session that ended
    * @param actualMinutesWatched The actual time spent watching (not media duration)
+   * @param isPartialWatch Whether this is a partial watch (didn't meet completion criteria)
    */
   private async createWatchHistoryEntry(
     session: ActiveSession,
-    actualMinutesWatched: number
+    actualMinutesWatched: number,
+    isPartialWatch: boolean
   ): Promise<void> {
     try {
       const mediaRepository = getRepository(Media);
@@ -660,14 +671,55 @@ class JellyfinActivityMonitor {
       });
 
       if (existingEntry) {
-        // Update existing entry
+        // Update existing entry - accumulate minutes
+        existingEntry.runtimeMinutes =
+          (existingEntry.runtimeMinutes || 0) + actualMinutesWatched;
         existingEntry.watchedAt = new Date();
+        // If this session completed the watch, mark it as no longer partial
+        if (!isPartialWatch) {
+          existingEntry.isPartialWatch = false;
+        }
         await watchHistoryRepository.save(existingEntry);
 
         logger.debug(`Updated existing watch history entry`, {
           label: 'Jellyfin Activity Monitor',
           entryId: existingEntry.id,
+          totalMinutes: existingEntry.runtimeMinutes,
+          isPartialWatch: existingEntry.isPartialWatch,
         });
+
+        // Check badges/progress only if this session completed the watch
+        if (!isPartialWatch) {
+          if (session.mediaType === MediaType.TV) {
+            const mediaIdForProgress = media.id;
+            seriesProgressService
+              .updateProgress(
+                session.seerrUserId,
+                mediaIdForProgress,
+                session.tmdbId
+              )
+              .catch((error) => {
+                logger.error(
+                  'Failed to update series progress after auto-sync',
+                  {
+                    label: 'Jellyfin Activity Monitor',
+                    userId: session.seerrUserId,
+                    mediaId: mediaIdForProgress,
+                    error: error.message,
+                  }
+                );
+              });
+          }
+          badgeService
+            .checkAndAwardBadges(session.seerrUserId)
+            .catch((error) => {
+              logger.error('Failed to check badges after auto-sync', {
+                label: 'Jellyfin Activity Monitor',
+                userId: session.seerrUserId,
+                error: error.message,
+              });
+            });
+        }
       } else {
         // Use actual minutes watched (real session time), not media duration
         const runtimeMinutes =
@@ -682,6 +734,7 @@ class JellyfinActivityMonitor {
           episodeNumber: session.episodeNumber,
           runtimeMinutes,
           watchedAt: new Date(),
+          isPartialWatch,
         });
 
         await watchHistoryRepository.save(watchHistory);
@@ -692,36 +745,46 @@ class JellyfinActivityMonitor {
             label: 'Jellyfin Activity Monitor',
             tmdbId: session.tmdbId,
             mediaType: session.mediaType,
+            isPartialWatch,
+            runtimeMinutes,
           }
         );
 
-        // Update series progress for TV shows (async, don't wait)
-        if (session.mediaType === MediaType.TV && media) {
-          const mediaIdForProgress = media.id;
-          seriesProgressService
-            .updateProgress(
-              session.seerrUserId,
-              mediaIdForProgress,
-              session.tmdbId
-            )
+        // Update series progress and badges only for completed watches
+        if (!isPartialWatch) {
+          // Update series progress for TV shows (async, don't wait)
+          if (session.mediaType === MediaType.TV && media) {
+            const mediaIdForProgress = media.id;
+            seriesProgressService
+              .updateProgress(
+                session.seerrUserId,
+                mediaIdForProgress,
+                session.tmdbId
+              )
+              .catch((error) => {
+                logger.error(
+                  'Failed to update series progress after auto-sync',
+                  {
+                    label: 'Jellyfin Activity Monitor',
+                    userId: session.seerrUserId,
+                    mediaId: mediaIdForProgress,
+                    error: error.message,
+                  }
+                );
+              });
+          }
+
+          // Check for new badges (async, don't wait)
+          badgeService
+            .checkAndAwardBadges(session.seerrUserId)
             .catch((error) => {
-              logger.error('Failed to update series progress after auto-sync', {
+              logger.error('Failed to check badges after auto-sync', {
                 label: 'Jellyfin Activity Monitor',
                 userId: session.seerrUserId,
-                mediaId: mediaIdForProgress,
                 error: error.message,
               });
             });
         }
-
-        // Check for new badges (async, don't wait)
-        badgeService.checkAndAwardBadges(session.seerrUserId).catch((error) => {
-          logger.error('Failed to check badges after auto-sync', {
-            label: 'Jellyfin Activity Monitor',
-            userId: session.seerrUserId,
-            error: error.message,
-          });
-        });
       }
     } catch (error) {
       logger.error('Failed to create watch history entry', {

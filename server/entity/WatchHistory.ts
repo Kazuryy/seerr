@@ -55,6 +55,13 @@ export class WatchHistory {
   @Column({ type: 'boolean', default: false })
   public isManual: boolean;
 
+  /**
+   * Whether this is a partial watch (didn't meet completion criteria)
+   * Partial watches still count towards total watch time
+   */
+  @Column({ type: 'boolean', default: false })
+  public isPartialWatch: boolean;
+
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;
 
