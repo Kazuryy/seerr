@@ -1,5 +1,6 @@
 import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
+import { DailyActivity } from '@server/entity/DailyActivity';
 import { MediaReview } from '@server/entity/MediaReview';
 import { ReviewLike } from '@server/entity/ReviewLike';
 import { SeriesProgress } from '@server/entity/SeriesProgress';
@@ -543,66 +544,65 @@ class BadgeService {
    * Check watching streak badges
    */
   private async checkStreakBadges(userId: number): Promise<UserBadge[]> {
-    const watchHistoryRepository = getRepository(WatchHistory);
+    const dailyActivityRepository = getRepository(DailyActivity);
     const badges: UserBadge[] = [];
 
-    // Get all watch dates (distinct days)
-    const watches = await watchHistoryRepository
-      .createQueryBuilder('watch')
-      .select('DATE(watch.watchedAt)', 'date')
-      .where('watch.userId = :userId', { userId })
-      .groupBy('DATE(watch.watchedAt)')
-      .orderBy('DATE(watch.watchedAt)', 'DESC')
+    // Use DailyActivity for streak calculation (consistent with UI display)
+    // DailyActivity.activityDate is stored as YYYY-MM-DD string
+    const activities = await dailyActivityRepository
+      .createQueryBuilder('activity')
+      .select('activity.activityDate', 'date')
+      .where('activity.userId = :userId', { userId })
+      .orderBy('activity.activityDate', 'DESC')
       .getRawMany();
 
-    if (watches.length === 0) return badges;
+    if (activities.length === 0) return badges;
 
-    // Calculate current streak
-    let currentStreak = 1;
+    // Helper to format date as YYYY-MM-DD in local timezone
+    const formatLocalDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const dates = activities.map((a) => a.date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayStr = formatLocalDate(today);
 
-    // Parse date string as local date (not UTC)
-    const lastWatchDateStr = watches[0].date;
-    const [year, month, day] = lastWatchDateStr.split('-').map(Number);
-    const lastWatchDate = new Date(year, month - 1, day);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = formatLocalDate(yesterday);
 
-    const daysDiff = Math.floor(
-      (today.getTime() - lastWatchDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    // Check if streak is active (had activity today or yesterday)
+    const lastActivityDate = dates[0];
+    const streakActive =
+      lastActivityDate === todayStr || lastActivityDate === yesterdayStr;
 
     logger.debug('Streak calculation debug', {
       label: 'Badge Service',
       userId,
-      lastWatchDateStr,
-      lastWatchDate: lastWatchDate.toISOString(),
-      today: today.toISOString(),
-      daysDiff,
-      watchDatesCount: watches.length,
+      lastActivityDate,
+      todayStr,
+      yesterdayStr,
+      streakActive,
+      activityDatesCount: dates.length,
     });
 
-    // Streak broken if more than 1 day gap
-    if (daysDiff > 1) {
+    if (!streakActive) {
       return badges;
     }
 
-    // Count consecutive days
-    for (let i = 1; i < watches.length; i++) {
-      // Parse date strings as local dates (not UTC)
-      const [prevYear, prevMonth, prevDay] = watches[i - 1].date
-        .split('-')
-        .map(Number);
-      const [currYear, currMonth, currDay] = watches[i].date
-        .split('-')
-        .map(Number);
-      const prevDate = new Date(prevYear, prevMonth - 1, prevDay);
-      const currDate = new Date(currYear, currMonth - 1, currDay);
+    // Calculate current streak
+    let currentStreak = 1;
+    const checkDate = new Date(lastActivityDate);
 
-      const diff = Math.floor(
-        (prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
+    for (let i = 1; i < dates.length; i++) {
+      checkDate.setDate(checkDate.getDate() - 1);
+      const expectedDateStr = formatLocalDate(checkDate);
 
-      if (diff === 1) {
+      if (dates[i] === expectedDateStr) {
         currentStreak++;
       } else {
         break;
@@ -613,7 +613,7 @@ class BadgeService {
       label: 'Badge Service',
       userId,
       currentStreak,
-      recentDates: watches.slice(0, 10).map((w) => w.date),
+      recentDates: dates.slice(0, 10),
     });
 
     const milestones = [
