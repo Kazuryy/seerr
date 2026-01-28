@@ -562,12 +562,24 @@ class BadgeService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const lastWatchDate = new Date(watches[0].date);
-    lastWatchDate.setHours(0, 0, 0, 0);
+    // Parse date string as local date (not UTC)
+    const lastWatchDateStr = watches[0].date;
+    const [year, month, day] = lastWatchDateStr.split('-').map(Number);
+    const lastWatchDate = new Date(year, month - 1, day);
 
     const daysDiff = Math.floor(
       (today.getTime() - lastWatchDate.getTime()) / (1000 * 60 * 60 * 24)
     );
+
+    logger.debug('Streak calculation debug', {
+      label: 'Badge Service',
+      userId,
+      lastWatchDateStr,
+      lastWatchDate: lastWatchDate.toISOString(),
+      today: today.toISOString(),
+      daysDiff,
+      watchDatesCount: watches.length,
+    });
 
     // Streak broken if more than 1 day gap
     if (daysDiff > 1) {
@@ -576,10 +588,15 @@ class BadgeService {
 
     // Count consecutive days
     for (let i = 1; i < watches.length; i++) {
-      const prevDate = new Date(watches[i - 1].date);
-      const currDate = new Date(watches[i].date);
-      prevDate.setHours(0, 0, 0, 0);
-      currDate.setHours(0, 0, 0, 0);
+      // Parse date strings as local dates (not UTC)
+      const [prevYear, prevMonth, prevDay] = watches[i - 1].date
+        .split('-')
+        .map(Number);
+      const [currYear, currMonth, currDay] = watches[i].date
+        .split('-')
+        .map(Number);
+      const prevDate = new Date(prevYear, prevMonth - 1, prevDay);
+      const currDate = new Date(currYear, currMonth - 1, currDay);
 
       const diff = Math.floor(
         (prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -591,6 +608,13 @@ class BadgeService {
         break;
       }
     }
+
+    logger.debug('Streak calculation result', {
+      label: 'Badge Service',
+      userId,
+      currentStreak,
+      recentDates: watches.slice(0, 10).map((w) => w.date),
+    });
 
     const milestones = [
       { count: 7, type: BadgeType.WATCHING_STREAK_7 },
