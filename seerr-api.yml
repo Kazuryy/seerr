@@ -10048,6 +10048,81 @@ paths:
                     type: number
                   progress:
                     type: object
+  /badges/user/{userId}/check:
+    post:
+      summary: Trigger badge check
+      description: Manually trigger badge check for a user (admin only)
+      tags:
+        - badges
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Badge check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: number
+                  newBadges:
+                    type: array
+                    items:
+                      type: object
+                  count:
+                    type: number
+  /badges/user/{userId}/award/{badgeType}:
+    post:
+      summary: Award community badge
+      description: Manually award a community badge to a user (admin only)
+      tags:
+        - badges
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+        - in: path
+          name: badgeType
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Badge awarded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  badge:
+                    type: object
+  /badges/user/{userId}/badge/{badgeId}:
+    delete:
+      summary: Remove badge
+      description: Remove a badge from a user (admin only)
+      tags:
+        - badges
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+        - in: path
+          name: badgeId
+          required: true
+          schema:
+            type: number
+      responses:
+        '204':
+          description: Badge removed
 
   /community/leaderboard:
     get:
