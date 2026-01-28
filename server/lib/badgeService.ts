@@ -226,13 +226,6 @@ export const BADGE_DEFINITIONS: Record<BadgeType, BadgeDefinition> = {
     icon: '🌙',
     category: 'special',
   },
-  [BadgeType.COMPLETIONIST]: {
-    type: BadgeType.COMPLETIONIST,
-    displayName: 'Completionist',
-    description: 'Completed 10 series',
-    icon: '✅',
-    category: 'special',
-  },
   [BadgeType.REWATCH_KING]: {
     type: BadgeType.REWATCH_KING,
     displayName: 'Rewatch Royalty',
@@ -667,9 +660,6 @@ class BadgeService {
       });
       if (badge) badges.push(badge);
     }
-
-    // Note: COMPLETIONIST badge is now handled by checkSeriesCompletionBadges()
-    // using the SeriesProgress entity for accurate series completion tracking
 
     return badges;
   }

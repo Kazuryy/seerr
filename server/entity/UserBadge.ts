@@ -49,7 +49,6 @@ export enum BadgeType {
 
   // Special achievements
   BINGE_WATCHER = 'BINGE_WATCHER', // Watched full season in 24h
-  COMPLETIONIST = 'COMPLETIONIST', // Completed 10 series
   REWATCH_KING = 'REWATCH_KING', // Rewatched 20 different items
   EARLY_ADOPTER = 'EARLY_ADOPTER', // One of first users of tracking system
   COMMUNITY_HERO = 'COMMUNITY_HERO', // Admin-granted

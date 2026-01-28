@@ -301,7 +301,6 @@ export enum BadgeType {
   WATCHING_STREAK_100 = 'WATCHING_STREAK_100',
 
   BINGE_WATCHER = 'BINGE_WATCHER', // Watched full season in 24h
-  COMPLETIONIST = 'COMPLETIONIST', // Completed 10 series
   CRITIC = 'CRITIC', // 50+ detailed reviews
   EARLY_ADOPTER = 'EARLY_ADOPTER', // One of first users of tracking system
   TRENDSETTER = 'TRENDSETTER', // Review that got 100+ likes

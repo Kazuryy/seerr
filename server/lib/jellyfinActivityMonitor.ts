@@ -688,38 +688,33 @@ class JellyfinActivityMonitor {
           isPartialWatch: existingEntry.isPartialWatch,
         });
 
-        // Check badges/progress only if this session completed the watch
-        if (!isPartialWatch) {
-          if (session.mediaType === MediaType.TV) {
-            const mediaIdForProgress = media.id;
-            seriesProgressService
-              .updateProgress(
-                session.seerrUserId,
-                mediaIdForProgress,
-                session.tmdbId
-              )
-              .catch((error) => {
-                logger.error(
-                  'Failed to update series progress after auto-sync',
-                  {
-                    label: 'Jellyfin Activity Monitor',
-                    userId: session.seerrUserId,
-                    mediaId: mediaIdForProgress,
-                    error: error.message,
-                  }
-                );
-              });
-          }
-          badgeService
-            .checkAndAwardBadges(session.seerrUserId)
+        // Update series progress only for completed watches
+        if (!isPartialWatch && session.mediaType === MediaType.TV) {
+          const mediaIdForProgress = media.id;
+          seriesProgressService
+            .updateProgress(
+              session.seerrUserId,
+              mediaIdForProgress,
+              session.tmdbId
+            )
             .catch((error) => {
-              logger.error('Failed to check badges after auto-sync', {
+              logger.error('Failed to update series progress after auto-sync', {
                 label: 'Jellyfin Activity Monitor',
                 userId: session.seerrUserId,
+                mediaId: mediaIdForProgress,
                 error: error.message,
               });
             });
         }
+
+        // Always check badges - streak badges need partial watches to count as activity
+        badgeService.checkAndAwardBadges(session.seerrUserId).catch((error) => {
+          logger.error('Failed to check badges after auto-sync', {
+            label: 'Jellyfin Activity Monitor',
+            userId: session.seerrUserId,
+            error: error.message,
+          });
+        });
       } else {
         // Use actual minutes watched (real session time), not media duration
         const runtimeMinutes =
@@ -750,41 +745,33 @@ class JellyfinActivityMonitor {
           }
         );
 
-        // Update series progress and badges only for completed watches
-        if (!isPartialWatch) {
-          // Update series progress for TV shows (async, don't wait)
-          if (session.mediaType === MediaType.TV && media) {
-            const mediaIdForProgress = media.id;
-            seriesProgressService
-              .updateProgress(
-                session.seerrUserId,
-                mediaIdForProgress,
-                session.tmdbId
-              )
-              .catch((error) => {
-                logger.error(
-                  'Failed to update series progress after auto-sync',
-                  {
-                    label: 'Jellyfin Activity Monitor',
-                    userId: session.seerrUserId,
-                    mediaId: mediaIdForProgress,
-                    error: error.message,
-                  }
-                );
-              });
-          }
-
-          // Check for new badges (async, don't wait)
-          badgeService
-            .checkAndAwardBadges(session.seerrUserId)
+        // Update series progress only for completed watches
+        if (!isPartialWatch && session.mediaType === MediaType.TV && media) {
+          const mediaIdForProgress = media.id;
+          seriesProgressService
+            .updateProgress(
+              session.seerrUserId,
+              mediaIdForProgress,
+              session.tmdbId
+            )
             .catch((error) => {
-              logger.error('Failed to check badges after auto-sync', {
+              logger.error('Failed to update series progress after auto-sync', {
                 label: 'Jellyfin Activity Monitor',
                 userId: session.seerrUserId,
+                mediaId: mediaIdForProgress,
                 error: error.message,
               });
             });
         }
+
+        // Always check for badges - streak badges need partial watches to count
+        badgeService.checkAndAwardBadges(session.seerrUserId).catch((error) => {
+          logger.error('Failed to check badges after auto-sync', {
+            label: 'Jellyfin Activity Monitor',
+            userId: session.seerrUserId,
+            error: error.message,
+          });
+        });
       }
     } catch (error) {
       logger.error('Failed to create watch history entry', {
